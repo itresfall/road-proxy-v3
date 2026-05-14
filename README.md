@@ -1,4 +1,4 @@
-# ROAD Proxy v3
+﻿# ROAD Proxy v3
 
 ROAD Proxy v3 is a WebSocket-backed TCP/UDP tunnel for games and local services. It uses JSON plugin profiles instead of native `.dll` or `.so` extensions.
 
@@ -288,14 +288,28 @@ Default control API:
 
 ## Compatibility Profiles
 
-Plugin profiles live in `plugins/<name>/plugin.json`.
+Runtime plugin profiles live in `plugins/<name>/plugin.json`.
+Community compatibility profiles live in `compat-profiles/<id>.json`.
+
+If ROAD is missing a game you tested, add a JSON profile under
+`compat-profiles/` and open a PR. This is the intended community contribution
+path: small, evidence-based game profiles are easier to review than broad code
+changes. See `compat-profiles/README.md` and
+`docs/COMPATIBILITY-CONTRIBUTING.md` for the required evidence, confidence
+rules, and validation commands.
+
+`plugins/` answers "how does ROAD forward this traffic at runtime?"
+`compat-profiles/` answers "how does Plugin Studio recognize and document this
+game?"
 
 | Profile | Network | Host target | Client listen | Notes |
 | --- | --- | --- | --- | --- |
+| `ddnet-udp` | UDP | `127.0.0.1:8303` | usually `127.0.0.1:18303` | Recommended free UDP baseline for multiplayer validation. |
 | `minecraft` | TCP | `127.0.0.1:25565` or LAN server IP | usually `127.0.0.1:25568` | Java edition style TCP forwarding. |
 | `minecraft-bedrock-udp` | UDP | `127.0.0.1:19132` | usually `127.0.0.1:19133` | RakNet UDP. |
 | `gzdoom-udp` | UDP | `127.0.0.1:5029` | `127.0.0.1:5029` | Use `-netmode 1`; keep peer broadcast off. |
 | `lethal-company-udp` | UDP | `127.0.0.1:7777` | `127.0.0.1:7777` | Experimental community profile for direct/LAN/local port traffic, not Steam relay traffic. |
+| `sven-coop-udp` | UDP | `127.0.0.1:27015` | usually `127.0.0.1:27015` | GoldSrc/Sven Co-op direct server traffic baseline. |
 
 A plugin target is the real service on the server side. A client listen address is what the local player connects to.
 
@@ -349,7 +363,7 @@ Useful non-interactive flags:
 
 Current behavior:
 
-- Detects compatibility profiles for GZDoom, Lethal Company direct UDP, Minecraft Bedrock, and Minecraft Java.
+- Detects compatibility profiles for DDNet, GZDoom, Lethal Company direct UDP, Minecraft Bedrock, and Minecraft Java.
 - Loads compatibility profiles from `compat-profiles/*.json`.
 - Scans Windows sockets with PowerShell NetTCPIP cmdlets (`Get-NetTCPConnection`, `Get-NetUDPEndpoint`) and falls back to `netstat`.
 - Reads Windows process metadata with PowerShell/CIM and falls back to `tasklist`.
@@ -783,3 +797,4 @@ only (`AGPL-3.0-only`). See `LICENSE`.
 You may use, study, modify, and share the code. If you distribute a modified
 version or run a modified network service for users, you must provide the
 corresponding source under the same license.
+

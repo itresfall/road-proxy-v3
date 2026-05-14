@@ -82,8 +82,7 @@ if [[ "${ARCH}" == "amd64" ]]; then
   rm -f "${REPO_ROOT}/${OUTPUT_ROOT}/road-proxy" \
     "${REPO_ROOT}/${OUTPUT_ROOT}/road-server" \
     "${REPO_ROOT}/${OUTPUT_ROOT}/road-client" \
-    "${REPO_ROOT}/${OUTPUT_ROOT}/plugin-studio" \
-    "${REPO_ROOT}/${OUTPUT_ROOT}/voice-server"
+    "${REPO_ROOT}/${OUTPUT_ROOT}/plugin-studio"
   cp -f "${OUT_DIR}/road-proxy" "${REPO_ROOT}/${OUTPUT_ROOT}/road-proxy"
   cp -f "${OUT_DIR}/road-server" "${REPO_ROOT}/${OUTPUT_ROOT}/road-server"
   cp -f "${OUT_DIR}/road-client" "${REPO_ROOT}/${OUTPUT_ROOT}/road-client"

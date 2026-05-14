@@ -82,7 +82,7 @@ try {
   if ($Arch -eq "amd64") {
     Write-Host ""
     Write-Host "Writing legacy linux paths in $OutputRoot"
-    foreach ($oldBinary in @("road-proxy", "road-server", "road-client", "plugin-studio", "voice-server")) {
+    foreach ($oldBinary in @("road-proxy", "road-server", "road-client", "plugin-studio")) {
       $oldPath = Join-Path $OutputRoot $oldBinary
       if (Test-Path -LiteralPath $oldPath) {
         Remove-Item -LiteralPath $oldPath -Force

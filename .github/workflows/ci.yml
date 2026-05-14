@@ -25,6 +25,9 @@ jobs:
       - name: Run tests
         run: go test ./...
 
+      - name: Validate compatibility profiles
+        run: go test ./internal/repoqa -run TestRepositoryCompatProfilesLoad -count=1
+
   build-linux:
     name: Linux Build Smoke
     runs-on: ubuntu-latest

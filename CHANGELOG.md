@@ -7,6 +7,8 @@ unless `ROAD_VERSION` is set during build.
 
 ## 0.1.0-dev - Unreleased
 
+- Added community compatibility profile contribution docs, PR checklist, README
+  guidance, and repository QA validation for `compat-profiles/*.json`.
 - Added GNU Affero General Public License v3.0 (`AGPL-3.0-only`) licensing for
   public open-source distribution.
 - Added `SECURITY.md`, `CONTRIBUTING.md`, and `docs/RELEASE-CHECKLIST.md` for

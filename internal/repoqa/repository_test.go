@@ -92,6 +92,62 @@ func TestRepositoryPluginsLoad(t *testing.T) {
 	}
 }
 
+func TestRepositoryCompatProfilesLoad(t *testing.T) {
+	root := repositoryRoot(t)
+	paths, err := filepath.Glob(filepath.Join(root, "compat-profiles", "*.json"))
+	if err != nil {
+		t.Fatalf("glob compat profiles failed: %v", err)
+	}
+
+	profilePaths := make([]string, 0, len(paths))
+	for _, path := range paths {
+		if strings.HasPrefix(filepath.Base(path), "_") {
+			continue
+		}
+		profilePaths = append(profilePaths, path)
+	}
+	if len(profilePaths) == 0 {
+		t.Fatal("no compatibility profile JSON files found")
+	}
+
+	loader := plugin.NewLoader(filepath.Join(root, "plugins"))
+	pluginNames, err := loader.ListAvailable()
+	if err != nil {
+		t.Fatalf("list plugins failed: %v", err)
+	}
+	plugins, err := loader.LoadEnabled(pluginNames)
+	if err != nil {
+		t.Fatalf("load plugins failed: %v", err)
+	}
+
+	localeDir := filepath.Join(root, "locales")
+	enCatalog := loadLocaleCatalog(t, filepath.Join(localeDir, "en.json"))
+	trCatalog := loadLocaleCatalog(t, filepath.Join(localeDir, "tr.json"))
+	seenIDs := map[string]string{}
+
+	for _, path := range profilePaths {
+		path := path
+		t.Run(filepath.Base(path), func(t *testing.T) {
+			data, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatalf("read compat profile failed: %v", err)
+			}
+
+			var raw map[string]json.RawMessage
+			if err := json.Unmarshal(data, &raw); err != nil {
+				t.Fatalf("parse compat profile object failed: %v", err)
+			}
+			validateRequiredCompatProfileKeys(t, raw)
+
+			var profile repositoryCompatProfile
+			if err := json.Unmarshal(data, &profile); err != nil {
+				t.Fatalf("parse compat profile failed: %v", err)
+			}
+			validateRepositoryCompatProfile(t, path, profile, plugins, enCatalog, trCatalog, seenIDs)
+		})
+	}
+}
+
 func TestRepositoryLocalesLoad(t *testing.T) {
 	root := repositoryRoot(t)
 	localeDir := filepath.Join(root, "locales")
@@ -123,6 +179,149 @@ func TestRepositoryLocalesLoad(t *testing.T) {
 	for key := range enCatalog {
 		if _, ok := trCatalog[key]; !ok {
 			t.Fatalf("Turkish locale is missing key %q", key)
+		}
+	}
+}
+
+type repositoryCompatProfile struct {
+	SchemaVersion          string                      `json:"schema_version"`
+	ID                     string                      `json:"id"`
+	DisplayName            string                      `json:"display_name"`
+	ROADScope              string                      `json:"road_scope"`
+	SteamLobbySupported    bool                        `json:"steam_lobby_supported"`
+	RequiresGameLaunchArgs bool                        `json:"requires_game_launch_args"`
+	Match                  []string                    `json:"match"`
+	ExeNames               []string                    `json:"exe_names"`
+	PluginName             string                      `json:"plugin_name"`
+	Network                string                      `json:"network"`
+	TargetHost             string                      `json:"target_host"`
+	TargetPort             int                         `json:"target_port"`
+	ClientListenPort       int                         `json:"client_listen_port"`
+	UDPPeerBroadcast       bool                        `json:"udp_peer_broadcast"`
+	UDPReplyPolicy         string                      `json:"udp_reply_policy"`
+	KnownPorts             []repositoryCompatKnownPort `json:"known_ports"`
+	NoteKeys               []string                    `json:"note_keys"`
+	LaunchAdviceKeys       []string                    `json:"launch_advice_keys"`
+}
+
+type repositoryCompatKnownPort struct {
+	Network string `json:"network"`
+	Port    int    `json:"port"`
+	Role    string `json:"role"`
+	Notes   string `json:"notes"`
+}
+
+func validateRequiredCompatProfileKeys(t *testing.T, raw map[string]json.RawMessage) {
+	t.Helper()
+
+	for _, key := range []string{
+		"schema_version",
+		"id",
+		"display_name",
+		"road_scope",
+		"steam_lobby_supported",
+		"requires_game_launch_args",
+		"plugin_name",
+		"network",
+		"target_host",
+		"target_port",
+		"client_listen_port",
+		"udp_peer_broadcast",
+	} {
+		if _, ok := raw[key]; !ok {
+			t.Fatalf("compat profile missing required key %q", key)
+		}
+	}
+	if _, hasMatch := raw["match"]; !hasMatch {
+		if _, hasExeNames := raw["exe_names"]; !hasExeNames {
+			t.Fatal("compat profile must include match or exe_names")
+		}
+	}
+}
+
+func validateRepositoryCompatProfile(
+	t *testing.T,
+	path string,
+	profile repositoryCompatProfile,
+	plugins map[string]*plugin.RuntimePlugin,
+	enCatalog map[string]string,
+	trCatalog map[string]string,
+	seenIDs map[string]string,
+) {
+	t.Helper()
+
+	if profile.SchemaVersion != "compat_profile.v1" {
+		t.Fatalf("schema_version = %q, want compat_profile.v1", profile.SchemaVersion)
+	}
+	if strings.TrimSpace(profile.ID) == "" {
+		t.Fatal("id is required")
+	}
+	wantFile := profile.ID + ".json"
+	if filepath.Base(path) != wantFile {
+		t.Fatalf("profile filename = %q, want %q", filepath.Base(path), wantFile)
+	}
+	if previousPath, ok := seenIDs[profile.ID]; ok {
+		t.Fatalf("duplicate compat profile id %q also used by %s", profile.ID, previousPath)
+	}
+	seenIDs[profile.ID] = path
+
+	if strings.TrimSpace(profile.DisplayName) == "" {
+		t.Fatal("display_name is required")
+	}
+	if profile.ROADScope != "direct_lan_local_port_only" {
+		t.Fatalf("road_scope = %q, want direct_lan_local_port_only", profile.ROADScope)
+	}
+	if len(profile.Match)+len(profile.ExeNames) == 0 {
+		t.Fatal("match or exe_names is required")
+	}
+
+	runtimePlugin := plugins[profile.PluginName]
+	if runtimePlugin == nil {
+		t.Fatalf("plugin_name %q does not exist in plugins/", profile.PluginName)
+	}
+	info := runtimePlugin.Info()
+	if info.TargetNetwork != profile.Network {
+		t.Fatalf("network = %q, plugin %q target network = %q", profile.Network, profile.PluginName, info.TargetNetwork)
+	}
+	switch profile.Network {
+	case "tcp", "udp":
+	default:
+		t.Fatalf("network must be tcp or udp, got %q", profile.Network)
+	}
+	if strings.TrimSpace(profile.TargetHost) == "" {
+		t.Fatal("target_host is required")
+	}
+	if profile.TargetPort <= 0 || profile.TargetPort > 65535 {
+		t.Fatalf("target_port out of range: %d", profile.TargetPort)
+	}
+	if profile.ClientListenPort < 0 || profile.ClientListenPort > 65535 {
+		t.Fatalf("client_listen_port out of range: %d", profile.ClientListenPort)
+	}
+	switch profile.UDPReplyPolicy {
+	case "", "any", "same_ip", "strict":
+	default:
+		t.Fatalf("udp_reply_policy must be empty, any, same_ip, or strict, got %q", profile.UDPReplyPolicy)
+	}
+	if profile.Network == "tcp" && profile.UDPPeerBroadcast {
+		t.Fatal("udp_peer_broadcast must be false for tcp profiles")
+	}
+	for i, knownPort := range profile.KnownPorts {
+		if knownPort.Network != "tcp" && knownPort.Network != "udp" {
+			t.Fatalf("known_ports[%d].network must be tcp or udp, got %q", i, knownPort.Network)
+		}
+		if knownPort.Port <= 0 || knownPort.Port > 65535 {
+			t.Fatalf("known_ports[%d].port out of range: %d", i, knownPort.Port)
+		}
+	}
+	for _, key := range append(append([]string{}, profile.NoteKeys...), profile.LaunchAdviceKeys...) {
+		if strings.TrimSpace(key) == "" {
+			t.Fatal("empty locale key in note_keys or launch_advice_keys")
+		}
+		if _, ok := enCatalog[key]; !ok {
+			t.Fatalf("English locale missing compat profile key %q", key)
+		}
+		if _, ok := trCatalog[key]; !ok {
+			t.Fatalf("Turkish locale missing compat profile key %q", key)
 		}
 	}
 }
