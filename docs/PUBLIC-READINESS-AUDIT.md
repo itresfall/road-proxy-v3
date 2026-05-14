@@ -79,15 +79,21 @@ Fix: packaging now removes existing `road-proxy-v3_*.zip` and matching `.sha256`
 - `trust_proxy_headers=true` is safe only behind Cloudflare or another trusted reverse proxy. Direct exposure with spoofable proxy headers is not supported.
 - UDP compatibility remains game-dependent. ROAD can prove transport behavior with `udp-check`, DDNet, and Sven Co-op baselines, but games that embed peer addresses or rely on official Steam/EOS relay traffic may still need protocol-specific work.
 - Windows arm64 builds are produced as experimental artifacts and still need runtime testing on real hardware.
-- GitHub Release publishing should be verified after tag CI runs in the private repo before flipping visibility to public.
+- GitHub Release publishing was verified from tag CI before public release.
+- GitHub repository hardening was applied after publication: Dependabot security
+  updates, secret scanning, secret scanning push protection, delete-branch-on-
+  merge, and `main` branch protection with required CI checks.
 
 ## Public Readiness Verdict
 
-Ready for a private final release run and GitHub Release verification.
+Published as a public repository after final CI, release asset, and repository
+security verification.
 
-Do not make the repository public until:
+Publication checks completed:
 
 1. `go test ./...`, `go vet ./...`, config validation, and release packaging pass after the final commit.
 2. The `v0.1.0` tag workflow creates GitHub Release assets successfully.
 3. The GitHub Release page contains zip + sha256 assets for Windows amd64, Windows arm64 experimental, Linux amd64, and Linux arm64.
-4. Repository visibility, Issues, Discussions, and private vulnerability reporting settings are set intentionally.
+4. Repository visibility, Issues, Projects, Wiki, and security settings are set intentionally.
+5. `main` branch protection requires `Go Test`, `Linux Build Smoke`, and
+   `Windows Build Smoke` before merge.

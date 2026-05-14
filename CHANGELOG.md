@@ -61,6 +61,13 @@ unless `ROAD_VERSION` is set during build.
   ROAD zip/checksum files before creating the current version artifacts.
 - Added GitHub Actions CI for tests, Windows build smoke, Linux build smoke, and
   tag-based release package artifacts.
+- Updated GitHub Actions to the Node 24 action generation
+  (`actions/checkout@v6`, `actions/setup-go@v6`, and
+  `actions/upload-artifact@v7`) and disabled Go cache restore to avoid noisy
+  toolchain cache warnings.
+- Added public repository hardening after publication: Dependabot security
+  updates, secret scanning, secret scanning push protection, delete-branch-on-
+  merge, and `main` branch protection with required CI checks.
 - Added repository QA tests that load real config JSON files and built-in plugin
   profiles.
 - Split the interactive `cmd/road` entrypoint into focused menu, server flow,
