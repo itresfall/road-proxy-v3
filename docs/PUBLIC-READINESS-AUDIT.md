@@ -9,6 +9,7 @@ Completed on Windows/PowerShell from the repository root:
 
 ```powershell
 go test ./...
+go test -race ./...
 go vet ./...
 go run ./cmd/road validate --all-configs
 ./scripts/build-windows.ps1
@@ -18,7 +19,8 @@ go run ./cmd/road validate --all-configs
 
 Result: passed.
 
-Race test note: `go test -race ./...` could not be completed on this machine because the local Go race detector needs CGO and no C compiler (`gcc`) is installed. This is an environment limitation, not a known test failure. Run the race suite on a machine with CGO + C compiler before a higher-confidence security release.
+Race test environment: Windows race testing requires CGO and a C compiler. This
+machine was prepared with MSYS2 UCRT64 GCC, then `go test -race ./...` passed.
 
 ## Fixed Findings
 
