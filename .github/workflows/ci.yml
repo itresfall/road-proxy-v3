@@ -79,6 +79,8 @@ jobs:
     name: Tag Release Package
     runs-on: windows-latest
     if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
     needs:
       - test
       - build-linux
@@ -107,3 +109,25 @@ jobs:
           path: |
             build/release/*.zip
             build/release/*.sha256
+
+      - name: Publish GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $assets = Get-ChildItem -LiteralPath "build/release" -File |
+            Where-Object { $_.Name -like "*.zip" -or $_.Name -like "*.sha256" } |
+            Sort-Object Name |
+            ForEach-Object { $_.FullName }
+
+          if (-not $assets -or $assets.Count -eq 0) {
+            throw "no release assets found under build/release"
+          }
+
+          gh release view $tag --repo $env:GITHUB_REPOSITORY *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $tag @assets --repo $env:GITHUB_REPOSITORY --clobber
+          } else {
+            gh release create $tag @assets --repo $env:GITHUB_REPOSITORY --title "ROAD Proxy v3 $tag" --generate-notes
+          }

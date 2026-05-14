@@ -69,3 +69,11 @@ Release notes should state:
 - ROAD is not a VPN or Steam/EOS relay replacement.
 - Public deployment should use token auth and local-only reverse-proxy binding.
 - Lethal Company direct UDP is experimental/community-validation.
+
+Release assets:
+
+- Do not commit `build/` outputs to the repository.
+- Tag CI must publish `build/release/*.zip` and `build/release/*.sha256` as
+  GitHub Release assets.
+- Keep Actions artifacts only as CI diagnostics; the public download path is
+  the GitHub Releases page.

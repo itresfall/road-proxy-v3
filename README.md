@@ -195,6 +195,9 @@ road-proxy-v3_<version>_<os>_<arch>.zip
 `locales/`, `deploy/`, `scripts/`, `README.md`, `CHANGELOG.md`, `LICENSE`,
 `SECURITY.md`, `CONTRIBUTING.md`, and `VERSION.txt`.
 
+`build/` is local/CI output and should not be committed. Tagged CI runs publish
+the zip and checksum files as GitHub Release assets.
+
 Linux arm64 is included by default in cross builds. Windows arm64 is opt-in
 because it is not runtime-tested yet.
 
