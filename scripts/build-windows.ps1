@@ -1,9 +1,12 @@
 param(
+  [ValidateSet("amd64", "arm64")]
+  [string]$Arch = "amd64",
   [string]$OutputRoot = "build/windows"
 )
 
 $ErrorActionPreference = "Stop"
 $repoRoot = Split-Path -Parent $PSScriptRoot
+$outDir = if ($Arch -eq "amd64") { $OutputRoot } else { Join-Path $OutputRoot $Arch }
 
 function Get-RoadCommit {
   if (-not [string]::IsNullOrWhiteSpace($env:ROAD_COMMIT)) {
@@ -43,41 +46,41 @@ try {
   $oldCGO = $env:CGO_ENABLED
 
   $env:GOOS = "windows"
-  $env:GOARCH = "amd64"
+  $env:GOARCH = $Arch
   $env:CGO_ENABLED = "0"
 
-  if (Test-Path -LiteralPath $OutputRoot) {
-    Remove-Item -LiteralPath $OutputRoot -Recurse -Force
+  if (Test-Path -LiteralPath $outDir) {
+    Remove-Item -LiteralPath $outDir -Recurse -Force
   }
-  [void](New-Item -ItemType Directory -Path $OutputRoot -Force)
+  [void](New-Item -ItemType Directory -Path $outDir -Force)
 
   foreach ($cmd in $commands) {
     $name = $cmd.Name
     $path = $cmd.Path
-    $outPath = Join-Path $OutputRoot $name
-    Write-Host "Building windows/amd64 -> $name"
+    $outPath = Join-Path $outDir $name
+    Write-Host "Building windows/$Arch -> $name"
     go build -ldflags $ldflags -o $outPath $path
     if ($LASTEXITCODE -ne 0) {
-      throw "build failed: windows/amd64 $name"
+      throw "build failed: windows/$Arch $name"
     }
   }
 
   foreach ($asset in @("configs", "plugins", "locales", "docs", "compat-profiles", "deploy")) {
-    $dest = Join-Path $OutputRoot $asset
+    $dest = Join-Path $outDir $asset
     if (Test-Path -LiteralPath $dest) {
       Remove-Item -LiteralPath $dest -Recurse -Force
     }
-    Copy-Item -Path ".\$asset" -Destination $OutputRoot -Recurse -Force
+    Copy-Item -Path ".\$asset" -Destination $outDir -Recurse -Force
   }
 
   foreach ($doc in @("README.md", "CHANGELOG.md", "LICENSE", "SECURITY.md", "CONTRIBUTING.md")) {
     if (Test-Path -LiteralPath $doc) {
-      Copy-Item -LiteralPath $doc -Destination $OutputRoot -Force
+      Copy-Item -LiteralPath $doc -Destination $outDir -Force
     }
   }
 
   Write-Host ""
-  Write-Host "Windows build complete: $OutputRoot"
+  Write-Host "Windows build complete: $outDir"
 }
 finally {
   $env:GOOS = $oldGOOS

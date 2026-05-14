@@ -64,8 +64,8 @@ the locally built files.
 Release notes should state:
 
 - Supported platforms: Windows amd64, Linux amd64, Linux arm64.
+- Experimental artifacts: Windows arm64 when built with `-IncludeWindowsArm64`.
 - macOS is not an official target.
 - ROAD is not a VPN or Steam/EOS relay replacement.
 - Public deployment should use token auth and local-only reverse-proxy binding.
 - Lethal Company direct UDP is experimental/community-validation.
-

@@ -47,9 +47,13 @@ unless `ROAD_VERSION` is set during build.
 - Clarified Lethal Company direct UDP plugin notes so direct-LAN physics desync
   is not misattributed to ROAD without baseline evidence.
 - Added shared build metadata support for all main binaries.
-- Added `--version` output to `road-proxy`, `road-server`, `road-client`,`r`n  and `plugin-studio`.
+- Added `--version` output to `road-proxy`, `road-server`, `road-client`, and
+  `plugin-studio`.
 - Added Windows, Linux amd64, and optional Linux arm64 release packaging through
   `scripts/build-cross.ps1 -Package`.
+- Added experimental Windows arm64 cross-build support through
+  `scripts/build-windows.ps1 -Arch arm64` and
+  `scripts/build-cross.ps1 -IncludeWindowsArm64`.
 - Added SHA256 checksum files for release archives.
 - Added GitHub Actions CI for tests, Windows build smoke, Linux build smoke, and
   tag-based release package artifacts.

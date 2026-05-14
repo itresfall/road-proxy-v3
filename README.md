@@ -26,12 +26,15 @@ Requirements:
 
 - Go 1.23 or newer for source builds.
 - Windows amd64 or Linux amd64/arm64 for maintained runtime builds.
+- Windows arm64 is available as an experimental cross-build artifact until real
+  ARM hardware testing exists.
 - macOS is not an official target; external tested PRs can add it later.
 
 Build Windows binaries:
 
 ```powershell
 ./scripts/build-windows.ps1
+./scripts/build-windows.ps1 -Arch arm64
 ```
 
 Run the interactive menu:
@@ -192,10 +195,12 @@ road-proxy-v3_<version>_<os>_<arch>.zip
 `locales/`, `deploy/`, `scripts/`, `README.md`, `CHANGELOG.md`, `LICENSE`,
 `SECURITY.md`, `CONTRIBUTING.md`, and `VERSION.txt`.
 
-Linux arm64 is included by default in cross builds. Disable it when needed:
+Linux arm64 is included by default in cross builds. Windows arm64 is opt-in
+because it is not runtime-tested yet.
 
 ```powershell
 ./scripts/build-cross.ps1 -Package -IncludeLinuxArm64:$false
+./scripts/build-cross.ps1 -Package -IncludeWindowsArm64
 ```
 
 ## CI
@@ -212,6 +217,7 @@ It runs on push, pull request, and manual dispatch:
 - Linux amd64 build smoke with `scripts/build-linux.sh amd64`
 - Linux arm64 cross-build smoke with `scripts/build-linux.sh arm64`
 - Windows amd64 build smoke with `scripts/build-windows.ps1`
+- Windows arm64 cross-build smoke with `scripts/build-windows.ps1 -Arch arm64`
 
 On Git tags, CI also runs:
 

@@ -71,6 +71,10 @@ jobs:
         shell: pwsh
         run: ./build/windows/road-proxy.exe --version
 
+      - name: Build windows arm64
+        shell: pwsh
+        run: ./scripts/build-windows.ps1 -Arch arm64
+
   release-package:
     name: Tag Release Package
     runs-on: windows-latest
@@ -94,7 +98,7 @@ jobs:
         run: |
           $env:ROAD_VERSION = "${{ github.ref_name }}"
           $env:ROAD_COMMIT = "${{ github.sha }}"
-          ./scripts/build-cross.ps1 -Package
+          ./scripts/build-cross.ps1 -Package -IncludeWindowsArm64
 
       - name: Upload release packages
         uses: actions/upload-artifact@v4

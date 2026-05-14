@@ -1,5 +1,6 @@
 param(
   [string]$OutputRoot = "build/release",
+  [switch]$IncludeWindowsArm64,
   [switch]$IncludeLinuxArm64 = $true,
   [switch]$Package
 )
@@ -36,6 +37,9 @@ $targets = @(
   @{ GOOS = "windows"; GOARCH = "amd64" },
   @{ GOOS = "linux"; GOARCH = "amd64" }
 )
+if ($IncludeWindowsArm64) {
+  $targets += @{ GOOS = "windows"; GOARCH = "arm64" }
+}
 if ($IncludeLinuxArm64) {
   $targets += @{ GOOS = "linux"; GOARCH = "arm64" }
 }
