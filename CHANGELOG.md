@@ -5,6 +5,15 @@ All notable release-facing changes should be recorded in this file.
 This project uses SemVer for tagged releases. Development builds use `0.1.0-dev`
 unless `ROAD_VERSION` is set during build.
 
+## v0.1.2 - 2026-05-14
+
+- Added an interactive client-menu auth token prompt for public endpoints such
+  as TryCloudflare and named Cloudflare tunnels.
+- Improved WebSocket `401` / `403` failures so ROAD reports missing or invalid
+  auth tokens directly and avoids retry spam for non-retryable auth failures.
+- Improved client plugin-profile discovery so protected public endpoints fail
+  with an auth-token hint instead of a generic missing-plugin message.
+
 ## v0.1.1 - 2026-05-14
 
 - Fixed the Lethal Company direct/LAN UDP client profile to listen on

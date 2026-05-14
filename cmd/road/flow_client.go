@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"net/url"
 	"os/signal"
 	"strings"
 	"syscall"
@@ -130,7 +131,41 @@ func applyClientConnectionInput(reader *bufio.Reader, cfg *config.ClientConfig) 
 	}
 	cfg.ServerWSURL = normalized
 	fmt.Printf(msg("client.endpoint_selected"), normalized)
+	if shouldPromptClientAuthToken(normalized) {
+		if err := promptClientAuthToken(reader, cfg); err != nil {
+			return false, err
+		}
+	}
 	return true, nil
+}
+
+func shouldPromptClientAuthToken(rawURL string) bool {
+	u, err := url.Parse(strings.TrimSpace(rawURL))
+	if err != nil || strings.TrimSpace(u.Host) == "" {
+		return false
+	}
+	return !isLocalHostOrLAN(u.Hostname())
+}
+
+func promptClientAuthToken(reader *bufio.Reader, cfg *config.ClientConfig) error {
+	raw, err := readLine(reader, msg("client.auth_token_prompt"))
+	if err != nil {
+		return err
+	}
+	token := strings.TrimSpace(raw)
+	if token == "" {
+		if strings.TrimSpace(cfg.AuthToken) == "" {
+			fmt.Print(msg("client.auth_token_missing_hint"))
+		}
+		return nil
+	}
+
+	cfg.AuthToken = token
+	if strings.TrimSpace(cfg.AuthHeader) == "" {
+		cfg.AuthHeader = config.DefaultAuthHeaderName
+	}
+	fmt.Printf(msg("client.auth_token_set"), cfg.AuthHeader)
+	return nil
 }
 
 func applyClientProfileFromServer(cfg *config.ClientConfig, requireProfile bool) error {

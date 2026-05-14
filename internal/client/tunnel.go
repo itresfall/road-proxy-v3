@@ -188,11 +188,8 @@ func (t *Tunnel) startUDP(ctx context.Context) error {
 			return existing, nil
 		}
 
-		wsConn, resp, dialErr := t.openWebSocket(ctx, targetWS)
+		wsConn, _, dialErr := t.openWebSocket(ctx, targetWS)
 		if dialErr != nil {
-			if resp != nil {
-				return nil, fmt.Errorf("udp websocket dial failed: %w (status=%d)", dialErr, resp.StatusCode)
-			}
 			return nil, fmt.Errorf("udp websocket dial failed: %w", dialErr)
 		}
 
@@ -353,13 +350,9 @@ func (t *Tunnel) handleConnection(ctx context.Context, localConn net.Conn, wsURL
 	defer localConn.Close()
 	t.applyTCPOptions(localConn)
 
-	wsConn, resp, err := t.openWebSocket(ctx, wsURL)
+	wsConn, _, err := t.openWebSocket(ctx, wsURL)
 	if err != nil {
-		if resp != nil {
-			t.logger.Printf("websocket dial failed: %v (status=%d)", err, resp.StatusCode)
-		} else {
-			t.logger.Printf("websocket dial failed: %v", err)
-		}
+		t.logger.Printf("websocket dial failed: %v", err)
 		return
 	}
 	defer wsConn.Close()
@@ -562,11 +555,14 @@ func (t *Tunnel) dialWebSocketWithRetry(
 			return wsConn, resp, nil
 		}
 
-		lastErr = err
+		lastErr = formatWebSocketDialError(err, resp)
 		lastResp = resp
 
 		if ctx.Err() != nil {
 			return nil, lastResp, ctx.Err()
+		}
+		if !shouldRetryWebSocketDial(resp) {
+			break
 		}
 		if attempt == attempts {
 			break
@@ -577,7 +573,7 @@ func (t *Tunnel) dialWebSocketWithRetry(
 			attempt,
 			attempts,
 			delay,
-			err,
+			lastErr,
 		)
 
 		timer := time.NewTimer(delay)
@@ -592,6 +588,33 @@ func (t *Tunnel) dialWebSocketWithRetry(
 	}
 
 	return nil, lastResp, lastErr
+}
+
+func formatWebSocketDialError(err error, resp *http.Response) error {
+	if err == nil {
+		return nil
+	}
+	if resp == nil {
+		return err
+	}
+	switch resp.StatusCode {
+	case http.StatusUnauthorized, http.StatusForbidden:
+		return fmt.Errorf(
+			"ROAD authentication failed (HTTP %d): check client auth_token/%s: %w",
+			resp.StatusCode,
+			config.DefaultAuthHeaderName,
+			err,
+		)
+	default:
+		return fmt.Errorf("%w (HTTP %d)", err, resp.StatusCode)
+	}
+}
+
+func shouldRetryWebSocketDial(resp *http.Response) bool {
+	if resp == nil {
+		return true
+	}
+	return resp.StatusCode != http.StatusUnauthorized && resp.StatusCode != http.StatusForbidden
 }
 
 func (t *Tunnel) buildDialHeaders() http.Header {

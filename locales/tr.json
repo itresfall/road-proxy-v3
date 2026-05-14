@@ -1,5 +1,8 @@
 {
   "client.connection_prompt": "Bağlanılacak domain/adres (varsayılan: %s, boş bırak=değiştirme): ",
+  "client.auth_token_missing_hint": "Bu public endpoint Public Server Wizard ekranındaki Auth token değerini isteyebilir.\n",
+  "client.auth_token_prompt": "Auth token (boş bırak=mevcut/yok): ",
+  "client.auth_token_set": "%s header ile auth token ayarlandı.\n",
   "client.endpoint_selected": "Bağlantı endpointi seçildi: %s\n",
   "client.mode": "CLIENT MODU",
   "client.plugin_selected": "Server plugin seçildi: %s\n",

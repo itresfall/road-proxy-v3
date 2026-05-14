@@ -1,6 +1,9 @@
 package client
 
 import (
+	"errors"
+	"net/http"
+	"strings"
 	"testing"
 
 	"road-proxy-v3/internal/config"
@@ -88,6 +91,32 @@ func TestBuildDialHeadersPreservesCustomHeaders(t *testing.T) {
 
 	if got := header.Get("X-Test"); got != "ok" {
 		t.Fatalf("unexpected custom header value: %q", got)
+	}
+}
+
+func TestFormatWebSocketDialErrorUnauthorized(t *testing.T) {
+	err := formatWebSocketDialError(
+		errors.New("websocket: bad handshake"),
+		&http.Response{StatusCode: http.StatusUnauthorized},
+	)
+	if err == nil {
+		t.Fatal("expected formatted error")
+	}
+	text := err.Error()
+	if !strings.Contains(text, "authentication failed") || !strings.Contains(text, "X-ROAD-Token") {
+		t.Fatalf("unexpected error text: %s", text)
+	}
+}
+
+func TestShouldRetryWebSocketDialRejectsAuthFailures(t *testing.T) {
+	if shouldRetryWebSocketDial(&http.Response{StatusCode: http.StatusUnauthorized}) {
+		t.Fatal("401 should not be retried")
+	}
+	if shouldRetryWebSocketDial(&http.Response{StatusCode: http.StatusForbidden}) {
+		t.Fatal("403 should not be retried")
+	}
+	if !shouldRetryWebSocketDial(&http.Response{StatusCode: http.StatusBadGateway}) {
+		t.Fatal("transient gateway errors should be retried")
 	}
 }
 

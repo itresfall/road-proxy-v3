@@ -1,5 +1,8 @@
 {
   "client.connection_prompt": "Domain/address to connect (default: %s, blank=keep): ",
+  "client.auth_token_missing_hint": "This public endpoint may require the Auth token shown by Public Server Wizard.\n",
+  "client.auth_token_prompt": "Auth token (blank=keep current/none): ",
+  "client.auth_token_set": "Auth token configured with header %s.\n",
   "client.endpoint_selected": "Connection endpoint selected: %s\n",
   "client.mode": "CLIENT MODE",
   "client.plugin_selected": "Server plugin selected: %s\n",

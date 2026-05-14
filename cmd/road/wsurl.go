@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -107,6 +108,8 @@ func getServerDefaultPluginProfile(cfg *config.ClientConfig) (serverPluginProfil
 				TargetNetwork: info.DefaultNetwork,
 			}, nil
 		}
+	} else if isAuthHTTPStatus(err) {
+		return serverPluginProfile{}, err
 	}
 
 	var p pluginsResp
@@ -117,6 +120,8 @@ func getServerDefaultPluginProfile(cfg *config.ClientConfig) (serverPluginProfil
 				TargetNetwork: p.Default.TargetNetwork,
 			}, nil
 		}
+	} else if isAuthHTTPStatus(err) {
+		return serverPluginProfile{}, err
 	}
 
 	var h healthResp
@@ -127,6 +132,8 @@ func getServerDefaultPluginProfile(cfg *config.ClientConfig) (serverPluginProfil
 				TargetNetwork: h.DefaultPlugin.TargetNetwork,
 			}, nil
 		}
+	} else if isAuthHTTPStatus(err) {
+		return serverPluginProfile{}, err
 	}
 
 	return serverPluginProfile{}, fmt.Errorf(msg("ws.default_plugin_not_found"))
@@ -190,8 +197,28 @@ func fetchJSON(httpClient *http.Client, endpoint string, headers http.Header, ou
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("http %d", resp.StatusCode)
+		return httpStatusError{endpoint: endpoint, statusCode: resp.StatusCode}
 	}
 
 	return json.NewDecoder(resp.Body).Decode(out)
+}
+
+type httpStatusError struct {
+	endpoint   string
+	statusCode int
+}
+
+func (e httpStatusError) Error() string {
+	if e.statusCode == http.StatusUnauthorized || e.statusCode == http.StatusForbidden {
+		return fmt.Sprintf("http %d from %s (ROAD auth token missing or invalid)", e.statusCode, e.endpoint)
+	}
+	return fmt.Sprintf("http %d from %s", e.statusCode, e.endpoint)
+}
+
+func isAuthHTTPStatus(err error) bool {
+	var statusErr httpStatusError
+	if !errors.As(err, &statusErr) {
+		return false
+	}
+	return statusErr.statusCode == http.StatusUnauthorized || statusErr.statusCode == http.StatusForbidden
 }

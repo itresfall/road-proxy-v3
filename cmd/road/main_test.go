@@ -265,6 +265,67 @@ func TestClientProfileFetchHeadersIncludesAuthToken(t *testing.T) {
 	}
 }
 
+func TestApplyClientConnectionInputPromptsForPublicAuthToken(t *testing.T) {
+	cfg := config.DefaultClient()
+	reader := bufio.NewReader(strings.NewReader("example.trycloudflare.com\nsecret-token\n"))
+
+	changed, err := applyClientConnectionInput(reader, cfg)
+	if err != nil {
+		t.Fatalf("applyClientConnectionInput returned error: %v", err)
+	}
+	if !changed {
+		t.Fatal("expected endpoint to change")
+	}
+	if cfg.ServerWSURL != "wss://example.trycloudflare.com/ws" {
+		t.Fatalf("server_ws_url = %s", cfg.ServerWSURL)
+	}
+	if cfg.AuthToken != "secret-token" {
+		t.Fatalf("auth_token = %q", cfg.AuthToken)
+	}
+	if cfg.AuthHeader != config.DefaultAuthHeaderName {
+		t.Fatalf("auth_header = %q", cfg.AuthHeader)
+	}
+}
+
+func TestApplyClientConnectionInputBlankPublicAuthKeepsExistingToken(t *testing.T) {
+	cfg := config.DefaultClient()
+	cfg.AuthToken = "existing-token"
+	cfg.AuthHeader = "X-Existing-Token"
+	reader := bufio.NewReader(strings.NewReader("road.example.com\n\n"))
+
+	changed, err := applyClientConnectionInput(reader, cfg)
+	if err != nil {
+		t.Fatalf("applyClientConnectionInput returned error: %v", err)
+	}
+	if !changed {
+		t.Fatal("expected endpoint to change")
+	}
+	if cfg.AuthToken != "existing-token" || cfg.AuthHeader != "X-Existing-Token" {
+		t.Fatalf("existing auth should be preserved, got token=%q header=%q", cfg.AuthToken, cfg.AuthHeader)
+	}
+}
+
+func TestGetServerDefaultPluginProfileReturnsAuthStatus(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "missing token", http.StatusUnauthorized)
+	}))
+	defer server.Close()
+
+	cfg := config.DefaultClient()
+	cfg.ServerWSURL = strings.Replace(server.URL, "http://", "ws://", 1) + "/ws"
+
+	_, err := getServerDefaultPluginProfile(cfg)
+	if err == nil {
+		t.Fatal("expected auth error")
+	}
+	if !isAuthHTTPStatus(err) {
+		t.Fatalf("expected auth status error, got %v", err)
+	}
+	if !strings.Contains(err.Error(), "auth token") {
+		t.Fatalf("expected auth-token hint, got %v", err)
+	}
+}
+
 func TestPublicServerLockRejectsSecondAcquire(t *testing.T) {
 	layout := testRuntimeLayout(t.TempDir())
 

@@ -149,6 +149,11 @@ Auth token: <generated-token>
 Local dashboard: http://127.0.0.1:8081/dashboard
 ```
 
+Give remote clients both `Endpoint` and `Auth token`. In interactive client
+mode they enter the endpoint first, then paste the token when ROAD asks for it.
+If the client logs HTTP `401` or `403`, Cloudflare routing reached ROAD but ROAD
+rejected the missing or wrong token.
+
 Notes:
 
 - TryCloudflare URLs are temporary.
