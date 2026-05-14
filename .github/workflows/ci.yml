@@ -20,7 +20,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-          cache: true
+          cache: false
 
       - name: Run tests
         run: go test ./...
@@ -39,7 +39,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-          cache: true
+          cache: false
 
       - name: Build linux amd64
         run: bash ./scripts/build-linux.sh amd64
@@ -61,7 +61,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-          cache: true
+          cache: false
 
       - name: Build windows amd64
         shell: pwsh
@@ -93,7 +93,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-          cache: true
+          cache: false
 
       - name: Build release packages
         shell: pwsh
