@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"sort"
 	"strings"
@@ -20,6 +21,13 @@ import (
 )
 
 const diagnosticMaxFileBytes = 8 * 1024 * 1024
+
+var (
+	diagnosticBearerPattern          = regexp.MustCompile(`(?i)\bbearer\s+[A-Za-z0-9._~+/=-]+`)
+	diagnosticQuotedTokenPairPattern = regexp.MustCompile(`(?i)(["']?(?:auth[_-]?token|x-road-token|authorization|cloudflare tunnel token|api[_-]?key|client[_-]?secret|password)["']?\s*:\s*)("[^"]*"|'[^']*')`)
+	diagnosticBareTokenPairPattern   = regexp.MustCompile(`(?i)\b(auth[_-]?token|x-road-token|authorization|cloudflare tunnel token|api[_-]?key|client[_-]?secret|password)\s*[:=]\s*[^\s,;{}]+`)
+	diagnosticTokenQueryPattern      = regexp.MustCompile(`(?i)([?&](?:token|auth_token|api_key|client_secret)=)[^&\s]+`)
+)
 
 type diagnosticBundleOptions struct {
 	OutDir     string `json:"out_dir"`
@@ -116,8 +124,8 @@ func createDiagnosticBundle(opts diagnosticBundleOptions) (string, error) {
 		Version:    version.String("road-proxy"),
 		GOOS:       runtime.GOOS,
 		GOARCH:     runtime.GOARCH,
-		WorkingDir: wd,
-		Options:    opts,
+		WorkingDir: redactDiagnosticPath(wd),
+		Options:    redactDiagnosticOptions(opts),
 		Notes:      collector.notes,
 	}
 	if err := collector.addJSON("metadata.json", metadata); err != nil {
@@ -354,26 +362,141 @@ func (c *diagnosticCollector) addFile(src, dest string) error {
 	}
 	c.added[name] = struct{}{}
 
-	in, err := os.Open(src)
+	data, err := os.ReadFile(src)
 	if err != nil {
 		return err
 	}
-	defer in.Close()
+	data = redactDiagnosticContent(name, data)
 
 	writer, err := c.zipw.Create(name)
 	if err != nil {
 		return fmt.Errorf("create zip entry %q: %w", name, err)
 	}
-	if _, err := io.Copy(writer, in); err != nil {
+	if _, err := writer.Write(data); err != nil {
 		return fmt.Errorf("copy %q into zip entry %q: %w", src, name, err)
 	}
 	return nil
 }
 
+func redactDiagnosticContent(dest string, data []byte) []byte {
+	if strings.EqualFold(filepath.Ext(dest), ".json") {
+		var value any
+		if err := json.Unmarshal(data, &value); err == nil {
+			redacted := redactDiagnosticJSON(value)
+			if out, err := json.MarshalIndent(redacted, "", "  "); err == nil {
+				return append(out, '\n')
+			}
+		}
+	}
+
+	text := string(data)
+	text = diagnosticBearerPattern.ReplaceAllString(text, "Bearer [REDACTED]")
+	text = diagnosticQuotedTokenPairPattern.ReplaceAllString(text, `${1}"[REDACTED]"`)
+	text = diagnosticBareTokenPairPattern.ReplaceAllString(text, `${1}: [REDACTED]`)
+	text = diagnosticTokenQueryPattern.ReplaceAllString(text, `${1}[REDACTED]`)
+	return []byte(text)
+}
+
+func redactDiagnosticJSON(value any) any {
+	switch v := value.(type) {
+	case map[string]any:
+		out := make(map[string]any, len(v))
+		for key, child := range v {
+			if isDiagnosticSecretKey(key) {
+				out[key] = "[REDACTED]"
+				continue
+			}
+			out[key] = redactDiagnosticJSON(child)
+		}
+		return out
+	case []any:
+		for i, child := range v {
+			v[i] = redactDiagnosticJSON(child)
+		}
+		return v
+	case string:
+		return redactDiagnosticString(v)
+	default:
+		return value
+	}
+}
+
+func redactDiagnosticString(value string) string {
+	value = diagnosticBearerPattern.ReplaceAllString(value, "Bearer [REDACTED]")
+	value = diagnosticTokenQueryPattern.ReplaceAllString(value, `${1}[REDACTED]`)
+	return value
+}
+
+func isDiagnosticSecretKey(key string) bool {
+	normalized := strings.ToLower(strings.TrimSpace(key))
+	normalized = strings.ReplaceAll(normalized, "-", "_")
+	switch normalized {
+	case "auth_token", "auth_tokens", "token", "tokens", "password", "secret",
+		"api_key", "api_token", "client_secret", "private_key", "authorization",
+		"x_road_token":
+		return true
+	default:
+		return false
+	}
+}
+
+func redactDiagnosticOptions(opts diagnosticBundleOptions) diagnosticBundleOptions {
+	opts.OutDir = redactDiagnosticPath(opts.OutDir)
+	opts.ServerPath = redactDiagnosticPath(opts.ServerPath)
+	opts.ClientPath = redactDiagnosticPath(opts.ClientPath)
+	opts.PluginDir = redactDiagnosticPath(opts.PluginDir)
+	opts.LogDir = redactDiagnosticPath(opts.LogDir)
+	return opts
+}
+
+func redactDiagnosticPath(path string) string {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return path
+	}
+	home, err := os.UserHomeDir()
+	if err != nil || strings.TrimSpace(home) == "" {
+		return path
+	}
+
+	cleanPath := filepath.Clean(path)
+	cleanHome := filepath.Clean(home)
+	pathVolume := strings.ToLower(filepath.VolumeName(cleanPath))
+	homeVolume := strings.ToLower(filepath.VolumeName(cleanHome))
+	if pathVolume != homeVolume {
+		return path
+	}
+
+	pathRest := strings.TrimPrefix(cleanPath, filepath.VolumeName(cleanPath))
+	homeRest := strings.TrimPrefix(cleanHome, filepath.VolumeName(cleanHome))
+	pathParts := splitCleanPath(pathRest)
+	homeParts := splitCleanPath(homeRest)
+	if len(homeParts) == 0 || len(pathParts) < len(homeParts) {
+		return path
+	}
+	for i := range homeParts {
+		if !strings.EqualFold(homeParts[i], pathParts[i]) {
+			return path
+		}
+	}
+	if len(pathParts) == len(homeParts) {
+		return "~"
+	}
+	return filepath.Join(append([]string{"~"}, pathParts[len(homeParts):]...)...)
+}
+
+func splitCleanPath(path string) []string {
+	path = strings.Trim(path, string(filepath.Separator))
+	if path == "" {
+		return nil
+	}
+	return strings.Split(path, string(filepath.Separator))
+}
+
 func (c *diagnosticCollector) note(kind, path, message string) {
 	c.notes = append(c.notes, diagnosticCollectionNote{
 		Kind:    kind,
-		Path:    path,
+		Path:    redactDiagnosticPath(path),
 		Message: message,
 	})
 }

@@ -17,6 +17,7 @@ Bu liste mevcut kod, dokumanlar, test durumu ve son GZDoom/Lethal Company deneyl
 - Release paketleyici eklendi: `scripts/build-cross.ps1 -Package`.
 - Windows/Linux build sonrasi otomatik `.zip` paketi ve `.sha256` checksum uretimi eklendi.
 - Pakete `configs`, `plugins`, `scripts`, binaryler, README, CHANGELOG ve `VERSION.txt` giriyor.
+- Paketleme basinda eski `road-proxy-v3_*.zip` ve `.sha256` assetleri temizleniyor.
 - Binary versiyon bilgisi eklendi: `--version`, build tarihi, commit/hash ve manuel `ROAD_VERSION`.
 - Versiyonlama stratejisi SemVer olarak belirlendi; gelistirme build varsayilani `0.1.0-dev`.
 - `CHANGELOG.md` eklendi ve release notlari buradan takip edilecek.
@@ -116,7 +117,7 @@ Bu liste mevcut kod, dokumanlar, test durumu ve son GZDoom/Lethal Company deneyl
 - Paket icinde IP/port gomen oyunlar icin adapter hook tasarimi yazildi; runtime genel payload rewrite yapmayacak, protocol-aware adapter opt-in olacak.
 - Ayni makinede birden fazla client config uretimi eklendi: `generate-config --client-instances N --client-start-port P`.
 - `udp_peer_broadcast` kararini Plugin Studio tarafinda daha akilli hale getir.
-- DDNet UDP profili eklendi: `ddnet-udp`, `configs/server-ddnet.json`, `configs/client-ddnet.json`; Lethal yerine temiz UDP oyun baseline'i olarak kullanılacak.
+- DDNet UDP profili eklendi: `ddnet-udp`, `configs/server-ddnet.json`, `configs/client-ddnet.json`; Lethal yerine temiz UDP oyun baseline'i olarak kullanilacak.
 - Her calisan oyun icin acceptance doc eklendi: Minecraft Java, Minecraft Bedrock, GZDoom UDP, Lethal Company direct UDP, DDNet UDP.
 - Lethal Company 3 kisi sonucu release engeli degil; profil community-validation olarak kalacak ve kullanici loglariyla olgunlasacak.
 
@@ -168,15 +169,16 @@ Bu liste mevcut kod, dokumanlar, test durumu ve son GZDoom/Lethal Company deneyl
 
 - Built-in RTT/ping olcumu eklendi: `/api/ping` ve `road-proxy ping`.
 - ROAD client-server arasi gecikme, jitter ve packet loss gorulebilir: `/api/ping` RTT, `/api/stats` UDP jitter/loss.
-- Per-plugin stats eklendi: `/api/stats.plugins` altinda session, byte, error ve UDP saglik sayaçlari.
+- Per-plugin stats eklendi: `/api/stats.plugins` altinda session, byte, error ve UDP saglik sayaclari.
 - Control API aktif session listesini detaylandirdi: `/api/sessions`.
-- Her session icin plugin, remote address, target address, tx/rx, age, idle suresi ve UDP saglik sayaçlari gorunur.
+- Her session icin plugin, remote address, target address, tx/rx, age, idle suresi ve UDP saglik sayaclari gorunur.
 - Basit local dashboard eklendi: `/dashboard`.
 - Dashboard hedefi tamamlandi: bagli clientlar, pluginler, portlar, trafik, hata, ping ve aktif session bilgisi.
 - Dashboard Control Deck seviyesine genisletildi: overview, sessions, plugin catalog, UDP diagnostics, security ve API sekmeleri.
 - Auth aktifken dashboard HTML kabugu yuklenebilir; API verileri icin tarayici icinde token giris paneli kullanilir.
 - JSON log opsiyonu eklendi: server/client config icinde `logging.format: "json"`.
 - Diagnostic bundle komutu eklendi: `road-proxy diagnostic-bundle --out diagnostics`, config/plugin/log/version ve netstat/ss snapshot tek zip icinde toplanir.
+- Diagnostic bundle hassas degerleri redakte eder: token, bearer header, parola, API key, client secret ve user-home path zip icinde acik kalmaz.
 - UDP packet metadata recorder eklendi: `udp_record.enabled=true` ile client/server JSONL metadata capture alir, payload yazmaz.
 - UDP replay/analysis taslagi eklendi: `docs/UDP-REPLAY-ANALYSIS-DRAFT.md`; mevcut recorder metadata-only oldugu icin byte-perfect replay iddiasi yok.
 - UDP metrics merkezi toplanabilir hale geldi; client logu disinda control API stats ve recorder metadata birlikte kullanilabilir.
@@ -270,7 +272,9 @@ Son hedef:
 - Lethal Company acceptance dokumani community-validation moduna cekildi; 3 kisi loglari geldikce guncellenecek.
 - UDP peer broadcast icin pozitif ve negatif test senaryolari ayrilsin.
 
-## P3 - Uzun Vadeli`r`n`r`n- Yardimci prototipler public release kapsami disinda tutulacak; ana ROAD paketi game/service proxy core, Plugin Studio ve dashboard ile sinirli kalacak.
+## P3 - Uzun Vadeli
+
+- Yardimci prototipler public release kapsami disinda tutulacak; ana ROAD paketi game/service proxy core, Plugin Studio ve dashboard ile sinirli kalacak.
 
 - Mini compatibility database kur.
 - Her oyun icin oyun adi, process adi, port, network, test durumu, oyuncu sayisi, launch argumani ve notlar tutulsun.

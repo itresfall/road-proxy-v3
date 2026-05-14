@@ -1,4 +1,4 @@
-﻿# ROAD Proxy v3 Master Roadmap
+# ROAD Proxy v3 Master Roadmap
 
 Tarih: 2026-05-11
 
@@ -30,10 +30,12 @@ Bu dosya `PROJECT-TODO.md` icindeki daginik maddeleri is sirasina sokan ana yol 
 {x} `CHANGELOG.md` ekle.
 {x} Release notlarini `CHANGELOG.md` uzerinden yazma disiplinini belirle.
 {x} `SECURITY.md`, `CONTRIBUTING.md` ve release checklist dosyalarini ekle.
+{x} Public release oncesi kaynak, dokuman, config, CI ve paket audit raporunu yaz.
 {x} Windows release paketi uret: binaryler, `configs/`, `plugins/`, README, checksum.
 {x} Linux amd64 release paketi uret: binaryler, `configs/`, `plugins/`, README, checksum.
 {x} Linux arm64 paketini opsiyonel hedef olarak belirle.
 {x} Paket isimlendirme standardini belirle: `road-proxy-v3_<version>_<os>_<arch>.zip` gibi.
+{x} Paketleme basinda eski `road-proxy-v3_*.zip` ve `.sha256` assetlerini temizle.
 
 ## Faz 2 - CI/CD ve Otomatik Guvence
 
@@ -161,6 +163,7 @@ Bu dosya `PROJECT-TODO.md` icindeki daginik maddeleri is sirasina sokan ana yol 
 {x} Auth aktifken dashboard shell yuklensin, API verileri icin tarayici icinde token giris paneli kullanilsin.
 {x} JSON log opsiyonu ekle.
 {x} Diagnostic bundle komutu ekle: config, plugin, logs, version, netstat/ss snapshot.
+{x} Diagnostic bundle icinde token, bearer header, parola, API key, client secret ve user-home path degerlerini redakte et.
 {x} UDP recorder ekle: kisa sureli packet metadata kaydi.
 {x} UDP replay/analysis araci icin taslak hazirla.
 

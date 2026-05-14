@@ -57,6 +57,12 @@ try {
   $oldGOARCH = $env:GOARCH
   $oldCGO = $env:CGO_ENABLED
 
+  if ($Package -and (Test-Path -LiteralPath $OutputRoot)) {
+    Get-ChildItem -LiteralPath $OutputRoot -File |
+      Where-Object { $_.Name -like "road-proxy-v3_*.zip" -or $_.Name -like "road-proxy-v3_*.zip.sha256" } |
+      Remove-Item -Force
+  }
+
   foreach ($target in $targets) {
     $goos = $target.GOOS
     $goarch = $target.GOARCH

@@ -1,4 +1,4 @@
-﻿# ROAD Proxy v3
+# ROAD Proxy v3
 
 ROAD Proxy v3 is a WebSocket-backed TCP/UDP tunnel for games and local services. It uses JSON plugin profiles instead of native `.dll` or `.so` extensions.
 
@@ -180,7 +180,7 @@ Build scripts embed:
 Example release build:
 
 ```powershell
-$env:ROAD_VERSION = "0.1.0"
+$env:ROAD_VERSION = "v0.1.0"
 ./scripts/build-cross.ps1 -Package
 ```
 
@@ -228,7 +228,9 @@ On Git tags, CI also runs:
 ./scripts/build-cross.ps1 -Package
 ```
 
-and uploads release zip/checksum files as workflow artifacts.
+and publishes release zip/checksum files as GitHub Release assets. The
+repository must allow GitHub Actions read/write workflow permissions for the
+release creation step.
 
 ## Language Files
 
@@ -686,6 +688,10 @@ Useful flags:
 - `--logs`: include a specific log directory.
 - `--skip-net`: skip the network snapshot.
 
+The bundle redacts common sensitive fields from config/log text, including
+auth tokens, bearer tokens, passwords, API keys, client secrets, and user-home
+paths in metadata. Review the zip before sharing it publicly.
+
 ## Control API
 
 Available by default on `http://host:8081`:
@@ -788,7 +794,7 @@ Then rebuild with the matching architecture.
 cmd/server           ROAD server binary
 cmd/client           ROAD client binary
 cmd/road             interactive all-in-one menu binary
-cmd/plugin-studio    Windows process scanner and plugin generator
+cmd/plugin-studio    Windows/Linux process scanner and plugin generator
 internal/engine      TCP/UDP/WebSocket forwarding engine
 internal/plugin      JSON plugin loader and runtime options
 configs/             runtime config templates

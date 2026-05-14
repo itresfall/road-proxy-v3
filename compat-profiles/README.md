@@ -1,4 +1,4 @@
-﻿# Compatibility Profiles
+# Compatibility Profiles
 
 `compat-profiles/` is ROAD's community compatibility database. Plugin Studio uses
 these JSON files to recognize known games, explain ROAD scope, and generate safer

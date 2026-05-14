@@ -1,4 +1,4 @@
-﻿# Cloudflare Free Integration (WSS)
+# Cloudflare Free Integration (WSS)
 
 This project does not proxy raw game TCP/UDP through Cloudflare directly. The supported model is:
 

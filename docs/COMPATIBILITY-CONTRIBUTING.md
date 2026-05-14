@@ -1,4 +1,4 @@
-﻿# Compatibility Contribution Guide
+# Compatibility Contribution Guide
 
 ROAD compatibility data should stay useful, conservative, and evidence-based.
 The goal is to build a ProtonDB-like knowledge layer for direct/LAN/local

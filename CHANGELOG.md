@@ -5,10 +5,12 @@ All notable release-facing changes should be recorded in this file.
 This project uses SemVer for tagged releases. Development builds use `0.1.0-dev`
 unless `ROAD_VERSION` is set during build.
 
-## 0.1.0-dev - Unreleased
+## v0.1.0 - 2026-05-14
 
 - Added community compatibility profile contribution docs, PR checklist, README
   guidance, and repository QA validation for `compat-profiles/*.json`.
+- Added public-readiness audit documentation for source, docs, CI, release,
+  privacy, and security review.
 - Added GNU Affero General Public License v3.0 (`AGPL-3.0-only`) licensing for
   public open-source distribution.
 - Added `SECURITY.md`, `CONTRIBUTING.md`, and `docs/RELEASE-CHECKLIST.md` for
@@ -55,6 +57,8 @@ unless `ROAD_VERSION` is set during build.
   `scripts/build-windows.ps1 -Arch arm64` and
   `scripts/build-cross.ps1 -IncludeWindowsArm64`.
 - Added SHA256 checksum files for release archives.
+- Changed release packaging so `scripts/build-cross.ps1 -Package` removes stale
+  ROAD zip/checksum files before creating the current version artifacts.
 - Added GitHub Actions CI for tests, Windows build smoke, Linux build smoke, and
   tag-based release package artifacts.
 - Added repository QA tests that load real config JSON files and built-in plugin
@@ -69,7 +73,8 @@ unless `ROAD_VERSION` is set during build.
   removed mojibake strings from that package.
 - Moved `cmd/plugin-studio` UI text, compatibility notes, and launch hints to
   key-based locale lookups.
-- Moved command-level flag and fatal error text for `road-server` and`r`n  `road-client` to locale lookups.
+- Moved command-level flag and fatal error text for `road-server` and
+  `road-client` to locale lookups.
 - Added locale QA coverage to catch missing Turkish keys for the English
   template.
 - Added `docs/I18N.md` and included `locales/` in build and release outputs.
@@ -140,6 +145,9 @@ unless `ROAD_VERSION` is set during build.
   `logging.format: "json"`, with `text` remaining the default.
 - Added `road-proxy diagnostic-bundle` to collect configs, plugin definitions,
   logs, version metadata, and a netstat/ss snapshot into a support zip.
+- Changed diagnostic bundles to redact sensitive config/log values such as
+  auth tokens, bearer tokens, passwords, API keys, client secrets, and
+  user-home paths in metadata.
 - Added config-driven UDP metadata recording through `udp_record`, writing
   JSONL direction/timing/size/session metadata without storing payload bytes.
 - Added UDP recorder and replay/analysis draft documentation.
@@ -164,3 +172,5 @@ unless `ROAD_VERSION` is set during build.
 - Kept ROAD scope explicit: direct/LAN/local TCP or UDP port traffic only, not a
   full VPN or Steam/EOS relay replacement.
 - Documented current GZDoom and Lethal Company direct UDP profile behavior.
+- Removed stale legacy research notes that did not match the current ROAD scope
+  or license posture.
