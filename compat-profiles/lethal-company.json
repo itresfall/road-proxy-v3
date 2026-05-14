@@ -19,7 +19,7 @@
   "network": "udp",
   "target_host": "127.0.0.1",
   "target_port": 7777,
-  "client_listen_port": 7777,
+  "client_listen_port": 25568,
   "udp_peer_broadcast": false,
   "udp_reply_policy": "same_ip",
   "known_ports": [
@@ -33,6 +33,7 @@
   "note_keys": [
     "studio.profile.lethal.note.transport",
     "studio.profile.lethal.note.localhost",
+    "studio.profile.lethal.note.listen_port",
     "studio.profile.lethal.note.single_client"
   ],
   "launch_advice_keys": [

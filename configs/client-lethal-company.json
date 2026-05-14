@@ -1,5 +1,5 @@
 {
-  "listen_addr": "127.0.0.1:7777",
+  "listen_addr": "127.0.0.1:25568",
   "listen_network": "udp",
   "server_ws_url": "ws://127.0.0.1:8080/ws",
   "plugin_name": "lethal-company-udp",

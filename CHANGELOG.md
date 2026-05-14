@@ -5,6 +5,15 @@ All notable release-facing changes should be recorded in this file.
 This project uses SemVer for tagged releases. Development builds use `0.1.0-dev`
 unless `ROAD_VERSION` is set during build.
 
+## v0.1.1 - 2026-05-14
+
+- Fixed the Lethal Company direct/LAN UDP client profile to listen on
+  `127.0.0.1:25568` instead of `127.0.0.1:7777`, matching the previously
+  working test setup and avoiding local UDP port conflicts with the game.
+- Clarified Lethal Company docs and Plugin Studio notes: host-side target stays
+  `127.0.0.1:7777`, while joining clients should point the game/mod at the
+  ROAD client listen address.
+
 ## v0.1.0 - 2026-05-14
 
 - Added community compatibility profile contribution docs, PR checklist, README

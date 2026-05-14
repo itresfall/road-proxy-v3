@@ -319,7 +319,7 @@ game?"
 | `minecraft` | TCP | `127.0.0.1:25565` or LAN server IP | usually `127.0.0.1:25568` | Java edition style TCP forwarding. |
 | `minecraft-bedrock-udp` | UDP | `127.0.0.1:19132` | usually `127.0.0.1:19133` | RakNet UDP. |
 | `gzdoom-udp` | UDP | `127.0.0.1:5029` | `127.0.0.1:5029` | Use `-netmode 1`; keep peer broadcast off. |
-| `lethal-company-udp` | UDP | `127.0.0.1:7777` | `127.0.0.1:7777` | Experimental community profile for direct/LAN/local port traffic, not Steam relay traffic. |
+| `lethal-company-udp` | UDP | `127.0.0.1:7777` | usually `127.0.0.1:25568` | Experimental community profile for direct/LAN/local port traffic, not Steam relay traffic. |
 | `sven-coop-udp` | UDP | `127.0.0.1:27015` | usually `127.0.0.1:27015` | GoldSrc/Sven Co-op direct server traffic baseline. |
 
 A plugin target is the real service on the server side. A client listen address is what the local player connects to.
@@ -491,7 +491,14 @@ Important: `udp_peer_broadcast` should stay `false` for the fixed GZDoom setup. 
 
 ## Lethal Company Direct UDP
 
-The included experimental profile assumes a mod or direct/LAN mode publishes locally on UDP `7777`. It is intentionally shipped as a community-test profile: if it works for a setup, keep the logs; if it desyncs, compare against direct LAN before blaming ROAD.
+The included experimental profile assumes the host-side mod or direct/LAN mode
+publishes locally on UDP `7777`. The joining client should connect the game/mod
+to the ROAD client listen address, default `127.0.0.1:25568`, to avoid local
+UDP port conflicts with the game.
+
+It is intentionally shipped as a community-test profile: if it works for a
+setup, keep the logs; if it desyncs, compare against direct LAN before blaming
+ROAD.
 
 Reference files:
 
@@ -586,7 +593,7 @@ Client config controls local listen and remote WebSocket URL:
 ```json
 {
   "listen_network": "udp",
-  "listen_addr": "127.0.0.1:7777",
+  "listen_addr": "127.0.0.1:25568",
   "server_ws_url": "ws://SERVER-IP:8080/ws",
   "plugin_name": "lethal-company-udp",
   "logging": {

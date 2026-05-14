@@ -22,11 +22,20 @@ bug.
 
 ## Scope
 
-ROAD can carry this flow when the game/mod talks to:
+ROAD can carry this flow when the host-side game/mod publishes to:
 
 ```text
 127.0.0.1:7777
 ```
+
+Joining clients should point the game/mod at the ROAD client listen address:
+
+```text
+127.0.0.1:25568
+```
+
+Do not reuse `127.0.0.1:7777` as the client listen port unless you have proven
+the game is not also binding that UDP port locally.
 
 If the game path uses official Steam lobby/relay transport, ROAD will not see or
 carry that traffic.
@@ -37,7 +46,7 @@ carry that traffic.
 plugin: lethal-company-udp
 network: udp
 target: 127.0.0.1:7777
-client listen: 127.0.0.1:7777
+client listen: 127.0.0.1:25568
 udp_peer_broadcast: false
 udp_reply_policy: same_ip
 ```

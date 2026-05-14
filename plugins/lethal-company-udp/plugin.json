@@ -34,7 +34,8 @@
       }
     ],
     "launch_args": [
-      "Point the game/mod direct or LAN target at 127.0.0.1:7777."
+      "Host side: keep the game/mod local UDP endpoint on 127.0.0.1:7777.",
+      "Client side: point the game/mod direct or LAN target at the ROAD client listen address, default 127.0.0.1:25568."
     ],
     "notes": [
       "Official Steam lobby/relay traffic is outside ROAD.",
@@ -56,7 +57,8 @@
     "process_name": "Lethal Company",
     "notes": [
       "ROAD only carries direct/LAN/local IP:port traffic; official Steam lobby/relay traffic is outside this port proxy.",
-      "Use this profile when the game or mod talks to localhost:7777.",
+      "Use this profile when the host game or mod publishes localhost:7777.",
+      "Use a separate ROAD client listen port such as 25568 to avoid local UDP port conflicts with the game.",
       "Keep udp_peer_broadcast disabled unless packet captures prove clients must receive each other's client-origin packets directly."
     ]
   }
