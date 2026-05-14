@@ -55,11 +55,6 @@ Install and enable the ROAD server service:
 ./deploy/linux/deploy-linux.ps1 -Target user@SERVER-IP -Arch amd64 -InstallSystemd
 ```
 
-Install server plus voice service:
-
-```powershell
-./deploy/linux/deploy-linux.ps1 -Target user@SERVER-IP -Arch amd64 -InstallSystemd -IncludeVoice
-```
 
 Install and restart immediately:
 
@@ -71,7 +66,6 @@ Templates:
 
 ```text
 deploy/systemd/road-server.service
-deploy/systemd/voice-server.service
 ```
 
 The templates assume:
@@ -79,7 +73,6 @@ The templates assume:
 - install directory: `/opt/road-proxy-v3`
 - service user/group: `road`
 - server config: `configs/server.json`
-- voice config: `configs/voice-server.json`
 
 ## Remote Commands
 

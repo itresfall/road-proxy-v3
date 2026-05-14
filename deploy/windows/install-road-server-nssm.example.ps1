@@ -2,15 +2,13 @@ param(
   [string]$InstallDir = "C:\road-proxy-v3",
   [string]$NSSM = "nssm.exe",
   [string]$ServiceName = "road-server",
-  [string]$Config = "configs\server.json",
-  [ValidateSet("server", "voice")]
-  [string]$Mode = "server"
+  [string]$Config = "configs\server.json"
 )
 
 $ErrorActionPreference = "Stop"
 
-$binary = if ($Mode -eq "voice") { "voice-server.exe" } else { "road-server.exe" }
-$displayName = if ($Mode -eq "voice") { "ROAD Voice Server" } else { "ROAD Proxy Server" }
+$binary = "road-server.exe"
+$displayName = "ROAD Proxy Server"
 $serviceBinary = Join-Path $InstallDir $binary
 
 if (-not (Test-Path -LiteralPath $serviceBinary)) {

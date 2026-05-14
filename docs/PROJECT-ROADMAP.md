@@ -16,7 +16,7 @@ Bu dosya `PROJECT-TODO.md` icindeki daginik maddeleri is sirasina sokan ana yol 
 
 {x} Repo kokunde sadece kaynak ve temel dokumanlar kalacak sekilde cop dosyalari temizle.
 {x} `scripts/` klasorunu sadece build scriptleriyle sinirli tut.
-{x} `configs/` klasorunu sadece aktif varsayilanlar, test edilmis oyun configleri, schema ve voice config ile sinirli tut.
+{x} `configs/` klasorunu sadece aktif varsayilanlar, test edilmis oyun configleri, schema ile sinirli tut.
 {x} `.gitignore` dosyasini build, log, runtime state ve gecici dosyalari kapsayacak sekilde guncelle.
 {x} Windows ve Linux build ciktilarinin `configs/` ve `plugins/` ile senkron kalmasini sagla.
 {x} README icinde sade calistirma modelini koru: build scriptleri + dogrudan binary/go run.
@@ -78,7 +78,7 @@ Bu dosya `PROJECT-TODO.md` icindeki daginik maddeleri is sirasina sokan ana yol 
 {x} Missing translation raporu ekle.
 {x} `cmd/road` metinlerini key-based i18n sistemine tasi.
 {x} `cmd/plugin-studio` metinlerini i18n sistemine tasi.
-{x} `cmd/server`, `cmd/client`, `cmd/voice-server` log/hata metinlerini gozden gecir.
+{x} `cmd/server` ve `cmd/client` log/hata metinlerini gozden gecir.
 {x} `docs/I18N.md` dosyasini yaz.
 {x} Release paketine locale dosyalarini dahil et.
 
@@ -168,7 +168,6 @@ Bu dosya `PROJECT-TODO.md` icindeki daginik maddeleri is sirasina sokan ana yol 
 
 {x} Linux deploy scripti tasarla: ssh, scp, chmod, config kopyalama, servis baslatma.
 {x} `road-server.service` systemd template ekle.
-{x} `voice-server.service` systemd template ekle.
 {x} Windows service/NSSM yardimci dokumani yaz.
 {x} Firewall helper tasarla.
 {x} Start/stop/status akisini `roadctl` komutu altinda toplama planini yaz.
@@ -177,16 +176,10 @@ Bu dosya `PROJECT-TODO.md` icindeki daginik maddeleri is sirasina sokan ana yol 
 {x} Dockerfile eklemeyi degerlendir.
 {x} docker-compose ornegi eklemeyi degerlendir.
 
-## Faz 10 - Voice Roadmap
+## Faz 10 - Public Release Scope Freeze
 
-{x} Voice icin ayri `docs/VOICE-TODO.md` olustur.
-{x} PCM MVP durumunu netlestir.
-{x} Opus gecis planini yaz.
-{x} Jitter buffer tasarimini yaz.
-{x} Mute/deafen state testlerini ekle.
-{x} Android istemci build ve test adimlarini ayri dokumana tasi.
-{x} Iki telefonla gercek voice test checklist'i olustur.
-{x} Voice server metriklerini control/log tarafinda goster.
+{x} ROAD public release kapsamindan yardimci ses prototiplerini cikar.
+{x} Ana paket hedefini oyun/local servis proxy runtime'i, plugin studio ve dashboard ile sinirli tut.
 
 ## Faz 11 - Uzun Vadeli Deneysel Konular
 
@@ -250,4 +243,5 @@ Bu dosya `PROJECT-TODO.md` icindeki daginik maddeleri is sirasina sokan ana yol 
 {x} Linux ile ilgili fazlarda Linux amd64 build gecmeli.
 {x} Dokuman referanslari silinen dosyalara isaret etmemeli.
 {x} Windows ve Linux disinda platform destek iddiasi yapilmamali.
+
 

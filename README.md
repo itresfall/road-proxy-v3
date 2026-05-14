@@ -1,4 +1,4 @@
-﻿# ROAD Proxy v3
+# ROAD Proxy v3
 
 ROAD Proxy v3 is a WebSocket-backed TCP/UDP tunnel for games and local services. It uses JSON plugin profiles instead of native `.dll` or `.so` extensions.
 
@@ -8,7 +8,7 @@ The practical goal: run ROAD server near the real game host, run ROAD client nea
 
 - Tunnels TCP or UDP traffic over a WebSocket data plane.
 - Routes traffic through named JSON plugin profiles.
-- Provides separate binaries for server, client, menu, Plugin Studio, and voice server.
+- Provides separate binaries for server, client, menu, and Plugin Studio.
 - Supports UDP session metrics for packet count, bytes, jitter, and RakNet-style loss estimates.
 - Supports optional UDP peer broadcast, disabled by default.
 - Keeps build scripts minimal: only Windows, Linux, and cross-build helpers live in `scripts/`.
@@ -166,7 +166,6 @@ Check binary metadata:
 ./build/windows/road-server.exe --version
 ./build/windows/road-client.exe --version
 ./build/windows/plugin-studio.exe --version
-./build/windows/voice-server.exe --version
 ```
 
 Build scripts embed:
@@ -253,7 +252,6 @@ Service templates:
 
 ```text
 deploy/systemd/road-server.service
-deploy/systemd/voice-server.service
 ```
 
 Detailed notes:
@@ -266,33 +264,6 @@ docs/DEPLOYMENT-PRESETS.md
 docs/ROADCTL-PLAN.md
 docs/DOCKER-EVALUATION.md
 docs/RELEASE-CHECKLIST.md
-```
-
-## Voice Server
-
-Voice is a separate runtime, not a plugin. It currently relays binary audio
-frames and JSON control messages over WebSocket.
-
-```powershell
-go run ./cmd/voice-server -config configs/voice-server.json
-./build/windows/voice-server.exe -config configs/voice-server.json
-```
-
-Voice HTTP endpoints:
-
-- `GET /api/health`
-- `GET /api/users`
-- `GET /api/stats`
-
-Voice planning and test docs:
-
-```text
-docs/VOICE-TODO.md
-docs/VOICE-CHAT-PLAN.md
-docs/VOICE-OPUS-PLAN.md
-docs/VOICE-JITTER-BUFFER.md
-docs/VOICE-ANDROID-BUILD-TEST.md
-docs/VOICE-TWO-PHONE-CHECKLIST.md
 ```
 
 ## Core Flow
@@ -795,7 +766,6 @@ cmd/server           ROAD server binary
 cmd/client           ROAD client binary
 cmd/road             interactive all-in-one menu binary
 cmd/plugin-studio    Windows process scanner and plugin generator
-cmd/voice-server     voice helper server
 internal/engine      TCP/UDP/WebSocket forwarding engine
 internal/plugin      JSON plugin loader and runtime options
 configs/             runtime config templates

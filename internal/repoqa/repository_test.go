@@ -13,7 +13,6 @@ import (
 	"road-proxy-v3/internal/config"
 	"road-proxy-v3/internal/i18n"
 	"road-proxy-v3/internal/plugin"
-	"road-proxy-v3/internal/voice"
 )
 
 func TestRepositoryConfigsLoad(t *testing.T) {
@@ -34,10 +33,6 @@ func TestRepositoryConfigsLoad(t *testing.T) {
 			case base == "app.json":
 				if _, err := app.LoadAppSettings(path); err != nil {
 					t.Fatalf("load app settings failed: %v", err)
-				}
-			case base == "voice-server.json":
-				if _, err := voice.LoadConfig(path); err != nil {
-					t.Fatalf("load voice config failed: %v", err)
 				}
 			case base == "plugin.schema.v1.json":
 				validatePluginSchemaDocument(t, path)

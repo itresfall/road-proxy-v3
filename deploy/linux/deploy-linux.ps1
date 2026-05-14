@@ -13,7 +13,6 @@ param(
   [switch]$InstallSystemd,
   [switch]$Start,
   [switch]$Restart,
-  [switch]$IncludeVoice,
   [switch]$WhatIfOnly,
   [string]$SSH = "ssh",
   [string]$SCP = "scp"
@@ -78,7 +77,7 @@ if ($CreateServiceUser) {
 $installParts += @(
   "sudo mkdir -p '$RemoteDir'",
   "sudo cp -a '$remoteTemp/.' '$RemoteDir/'",
-  "(sudo chmod +x '$RemoteDir/road-proxy' '$RemoteDir/road-server' '$RemoteDir/road-client' '$RemoteDir/plugin-studio' '$RemoteDir/voice-server' '$RemoteDir/deploy/linux/firewall-ufw.sh' 2>/dev/null || true)",
+  "(sudo chmod +x '$RemoteDir/road-proxy' '$RemoteDir/road-server' '$RemoteDir/road-client' '$RemoteDir/plugin-studio' '$RemoteDir/deploy/linux/firewall-ufw.sh' 2>/dev/null || true)",
   "sudo chown -R '$($ServiceUser):$($ServiceGroup)' '$RemoteDir'",
   "rm -rf '$remoteTemp'"
 )
@@ -90,23 +89,14 @@ Invoke-Remote $installCommand
 if ($InstallSystemd) {
   Write-Host "Installing systemd service templates"
   Invoke-Remote "sudo cp '$RemoteDir/deploy/systemd/road-server.service' /etc/systemd/system/road-server.service && sudo systemctl daemon-reload && sudo systemctl enable road-server.service"
-  if ($IncludeVoice) {
-    Invoke-Remote "sudo cp '$RemoteDir/deploy/systemd/voice-server.service' /etc/systemd/system/voice-server.service && sudo systemctl daemon-reload && sudo systemctl enable voice-server.service"
-  }
 }
 
 if ($Restart) {
   Write-Host "Restarting services"
   Invoke-Remote "sudo systemctl restart road-server.service"
-  if ($IncludeVoice) {
-    Invoke-Remote "sudo systemctl restart voice-server.service"
-  }
 } elseif ($Start) {
   Write-Host "Starting services"
   Invoke-Remote "sudo systemctl start road-server.service"
-  if ($IncludeVoice) {
-    Invoke-Remote "sudo systemctl start voice-server.service"
-  }
 }
 
 Write-Host "Deploy complete: ${Target}:$RemoteDir"

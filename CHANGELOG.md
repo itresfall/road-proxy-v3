@@ -45,8 +45,7 @@ unless `ROAD_VERSION` is set during build.
 - Clarified Lethal Company direct UDP plugin notes so direct-LAN physics desync
   is not misattributed to ROAD without baseline evidence.
 - Added shared build metadata support for all main binaries.
-- Added `--version` output to `road-proxy`, `road-server`, `road-client`,
-  `plugin-studio`, and `voice-server`.
+- Added `--version` output to `road-proxy`, `road-server`, `road-client`,`r`n  and `plugin-studio`.
 - Added Windows, Linux amd64, and optional Linux arm64 release packaging through
   `scripts/build-cross.ps1 -Package`.
 - Added SHA256 checksum files for release archives.
@@ -64,8 +63,7 @@ unless `ROAD_VERSION` is set during build.
   removed mojibake strings from that package.
 - Moved `cmd/plugin-studio` UI text, compatibility notes, and launch hints to
   key-based locale lookups.
-- Moved command-level flag and fatal error text for `road-server`,
-  `road-client`, and `voice-server` to locale lookups.
+- Moved command-level flag and fatal error text for `road-server` and`r`n  `road-client` to locale lookups.
 - Added locale QA coverage to catch missing Turkish keys for the English
   template.
 - Added `docs/I18N.md` and included `locales/` in build and release outputs.
@@ -146,9 +144,6 @@ unless `ROAD_VERSION` is set during build.
   deployment presets, a `roadctl` operations plan, and Docker evaluation docs.
 - Build outputs now include `deploy/` alongside configs, plugins, locales,
   docs, and compatibility profiles.
-- Added voice server `/api/stats` counters plus mute/deafen state tests.
-- Added voice roadmap docs for PCM MVP status, Opus, jitter buffer, Android
-  build/test, and two-phone acceptance testing.
 - Added GZDoom UDP and Lethal Company direct UDP acceptance documents.
 - Split the large Plugin Studio entrypoint into focused flow, capture,
   fingerprint, topology, port analysis, report, scanner, signals, input, and

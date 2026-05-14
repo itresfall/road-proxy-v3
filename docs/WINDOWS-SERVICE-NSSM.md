@@ -15,7 +15,6 @@ Expected files:
 
 ```text
 road-server.exe
-voice-server.exe
 configs\
 plugins\
 locales\
@@ -48,17 +47,6 @@ Remove:
 
 ```powershell
 nssm remove road-server confirm
-```
-
-## Install Voice Service
-
-```powershell
-.\deploy\windows\install-road-server-nssm.example.ps1 `
-  -InstallDir C:\road-proxy-v3 `
-  -NSSM C:\tools\nssm\nssm.exe `
-  -ServiceName road-voice `
-  -Config configs\voice-server.json `
-  -Mode voice
 ```
 
 ## Firewall

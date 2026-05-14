@@ -1,4 +1,4 @@
-﻿{
+{
   "client.connection_prompt": "Bağlanılacak domain/adres (varsayılan: %s, boş bırak=değiştirme): ",
   "client.endpoint_selected": "Bağlantı endpointi seçildi: %s\n",
   "client.mode": "CLIENT MODU",
@@ -224,15 +224,11 @@
   "cmd.flag_version": "sürümü yazdır ve çık",
   "cmd.server.flag_config": "server config dosyası yolu",
   "cmd.client.flag_config": "client config dosyası yolu",
-  "cmd.voice.flag_config": "voice server config dosyası yolu",
   "cmd.error.runtime_setup_failed": "runtime hazırlama başarısız: %v",
   "cmd.server.error.config_load_failed": "config yüklenemedi: %v",
   "cmd.server.error.engine_stopped": "engine hata ile durdu: %v",
   "cmd.client.error.config_load_failed": "client config yüklenemedi: %v",
   "cmd.client.error.stopped": "client hata ile durdu: %v",
-  "cmd.voice.error.config_load_failed": "voice config yüklenemedi: %v",
-  "cmd.voice.error.setup_failed": "voice server hazırlanamadı: %v",
-  "cmd.voice.error.stopped": "voice server hata ile durdu: %v",
   "diagnostic.flag_out": "tanı paketi çıktı klasörü",
   "diagnostic.flag_server": "pakete eklenecek server config yolu",
   "diagnostic.flag_client": "pakete eklenecek client config yolu",

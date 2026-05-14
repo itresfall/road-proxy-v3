@@ -1,4 +1,4 @@
-﻿# ROAD Proxy v3 Yapilacaklar Listesi
+# ROAD Proxy v3 Yapilacaklar Listesi
 
 Tarih: 2026-05-11
 
@@ -85,8 +85,8 @@ Bu liste mevcut kod, dokumanlar, test durumu ve son GZDoom/Lethal Company deneyl
 - `cmd/road` metinleri key-based i18n sistemine tasindi.
 - `cmd/road` icindeki mojibake gorunen kullanici metinleri temizlendi.
 - `cmd/plugin-studio` ekran metinleri, profil notlari ve launch hintleri key-based i18n sistemine tasindi.
-- `cmd/server`, `cmd/client` ve `cmd/voice-server` komut seviyesi flag/fatal hata metinleri i18n sistemine baglandi.
-- Engine/client/voice icindeki teknik runtime loglari bilerek Ingilizce operasyon logu olarak birakildi.
+- `cmd/server` ve `cmd/client` komut seviyesi flag/fatal hata metinleri i18n sistemine baglandi.
+- Engine/client icindeki teknik runtime loglari bilerek Ingilizce operasyon logu olarak birakildi.
 - Windows PowerShell 5.1 ve `cmd.exe` icinde gecici Turkce runtime config ile UTF-8 menu cikti testi gecti.
 - PowerShell 7 icinde Turkce menu, Public Server Wizard ve TryCloudflare akisi UTF-8 bozulmasi olmadan calisti.
 - Windows Terminal encoding testi ayri kaldi; `WT_SESSION` ile dogrulanacak.
@@ -185,7 +185,7 @@ Bu liste mevcut kod, dokumanlar, test durumu ve son GZDoom/Lethal Company deneyl
 
 - Linux deploy otomasyonu eklendi: `deploy/linux/deploy-linux.ps1`; `-WhatIfOnly` ile SSH/SCP aksiyonlari dry-run gorulebilir.
 - `scp`, `ssh`, `chmod`, config kopyalama ve servis baslatma tek script ile yapilabiliyor.
-- `systemd` service template eklendi: `deploy/systemd/road-server.service`, `deploy/systemd/voice-server.service`.
+- `systemd` service template eklendi: `deploy/systemd/road-server.service`.
 - Windows service destegi NSSM uzerinden dokumante edildi: `docs/WINDOWS-SERVICE-NSSM.md`.
 - Firewall helper eklendi: `deploy/windows/open-firewall.ps1`, `deploy/linux/firewall-ufw.sh`.
 - Windows/Linux port acma kontrolu ve izin verme islemi helper dosyalariyla baslatildi.
@@ -248,7 +248,7 @@ Yol haritasi:
 14. Yeni dil ekleme dokumani yaz: `docs/I18N.md`.
 15. Once `cmd/road` metinlerini i18n sistemine tasi. Tamamlandi.
 16. Sonra `cmd/plugin-studio` metinlerini i18n sistemine tasi. Tamamlandi.
-17. Sonra `cmd/server`, `cmd/client`, `cmd/voice-server` log ve hata metinlerini gozden gecir.
+17. Sonra `cmd/server` ve `cmd/client` log ve hata metinlerini gozden gecir.
 18. PowerShell menu ve helper scriptleri icin ya ayri locale sistemi kur ya da Go menu'yu primary ilan et.
 19. Test ekle: dil fallback, eksik key, format argumanlari, UTF-8 cikti.
 20. Release paketine `locales/en.json`, `locales/tr.json` ve ceviri dokumani dahil et.
@@ -270,7 +270,7 @@ Son hedef:
 - Lethal Company acceptance dokumani community-validation moduna cekildi; 3 kisi loglari geldikce guncellenecek.
 - UDP peer broadcast icin pozitif ve negatif test senaryolari ayrilsin.
 
-## P3 - Uzun Vadeli
+## P3 - Uzun Vadeli`r`n`r`n- Yardimci prototipler public release kapsami disinda tutulacak; ana ROAD paketi game/service proxy core, Plugin Studio ve dashboard ile sinirli kalacak.
 
 - Mini compatibility database kur.
 - Her oyun icin oyun adi, process adi, port, network, test durumu, oyuncu sayisi, launch argumani ve notlar tutulsun.
@@ -279,10 +279,6 @@ Son hedef:
 - Plugin marketplace veya local registry mantigi ekle.
 - Native GUI launcher opsiyonel uzun vadeli is; ilk resmi GUI yolu dependency-free embedded web dashboard.
 - Kullanici oyun secer, ROAD config ve launch script otomatik hazirlanir.
-- Voice tarafinda Opus, jitter buffer, mute/deafen state ve Android istemci tamamlanir.
-- Voice icin ayri `docs/VOICE-TODO.md` olusturuldu; codec, Android, Opus, jitter buffer, mute/deafen ve test plani ayri dokumanlara ayrildi.
-- Voice server `/api/stats` eklendi; aktif kullanici, join, control, state, audio frame/byte ve hata sayaçlari gorunur.
-- Voice mute/deafen state testleri eklendi.
 - Cloudflare, VPS ve LAN deployment presetleri eklenir.
 - Docker deployment presetleri eklenir.
 - macOS/Darwin build resmi roadmap'e alinmayacak; dis katki gelirse ayri PR/test kaniti ile degerlendirilecek.

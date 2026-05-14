@@ -1,4 +1,4 @@
-﻿{
+{
   "client.connection_prompt": "Domain/address to connect (default: %s, blank=keep): ",
   "client.endpoint_selected": "Connection endpoint selected: %s\n",
   "client.mode": "CLIENT MODE",
@@ -224,15 +224,11 @@
   "cmd.flag_version": "print version and exit",
   "cmd.server.flag_config": "path to server config",
   "cmd.client.flag_config": "path to client config",
-  "cmd.voice.flag_config": "path to voice server config",
   "cmd.error.runtime_setup_failed": "runtime setup failed: %v",
   "cmd.server.error.config_load_failed": "config load failed: %v",
   "cmd.server.error.engine_stopped": "engine stopped with error: %v",
   "cmd.client.error.config_load_failed": "client config load failed: %v",
   "cmd.client.error.stopped": "client stopped with error: %v",
-  "cmd.voice.error.config_load_failed": "voice config load failed: %v",
-  "cmd.voice.error.setup_failed": "voice server setup failed: %v",
-  "cmd.voice.error.stopped": "voice server stopped with error: %v",
   "diagnostic.flag_out": "diagnostic bundle output directory",
   "diagnostic.flag_server": "server config path to include",
   "diagnostic.flag_client": "client config path to include",

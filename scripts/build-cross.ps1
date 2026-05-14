@@ -44,8 +44,7 @@ $commands = @(
   @{ Name = "road-proxy"; Path = "./cmd/road" },
   @{ Name = "road-server"; Path = "./cmd/server" },
   @{ Name = "road-client"; Path = "./cmd/client" },
-  @{ Name = "plugin-studio"; Path = "./cmd/plugin-studio" },
-  @{ Name = "voice-server"; Path = "./cmd/voice-server" }
+  @{ Name = "plugin-studio"; Path = "./cmd/plugin-studio" }
 )
 
 Push-Location $repoRoot
@@ -58,9 +57,10 @@ try {
     $goos = $target.GOOS
     $goarch = $target.GOARCH
     $outDir = Join-Path $OutputRoot "$goos-$goarch"
-    if (-not (Test-Path -LiteralPath $outDir)) {
-      [void](New-Item -ItemType Directory -Path $outDir -Force)
+    if (Test-Path -LiteralPath $outDir) {
+      Remove-Item -LiteralPath $outDir -Recurse -Force
     }
+    [void](New-Item -ItemType Directory -Path $outDir -Force)
 
     Write-Host ""
     Write-Host "Building target: $goos/$goarch"

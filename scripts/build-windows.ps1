@@ -33,8 +33,7 @@ $commands = @(
   @{ Name = "road-proxy.exe"; Path = "./cmd/road" },
   @{ Name = "road-server.exe"; Path = "./cmd/server" },
   @{ Name = "road-client.exe"; Path = "./cmd/client" },
-  @{ Name = "plugin-studio.exe"; Path = "./cmd/plugin-studio" },
-  @{ Name = "voice-server.exe"; Path = "./cmd/voice-server" }
+  @{ Name = "plugin-studio.exe"; Path = "./cmd/plugin-studio" }
 )
 
 Push-Location $repoRoot
@@ -47,9 +46,10 @@ try {
   $env:GOARCH = "amd64"
   $env:CGO_ENABLED = "0"
 
-  if (-not (Test-Path -LiteralPath $OutputRoot)) {
-    [void](New-Item -ItemType Directory -Path $OutputRoot -Force)
+  if (Test-Path -LiteralPath $OutputRoot) {
+    Remove-Item -LiteralPath $OutputRoot -Recurse -Force
   }
+  [void](New-Item -ItemType Directory -Path $OutputRoot -Force)
 
   foreach ($cmd in $commands) {
     $name = $cmd.Name

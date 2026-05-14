@@ -42,6 +42,7 @@ COMMIT="${COMMIT:-unknown}"
 BUILD_DATE="${ROAD_BUILD_DATE:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}"
 LDFLAGS="-X road-proxy-v3/internal/version.Version=${VERSION} -X road-proxy-v3/internal/version.Commit=${COMMIT} -X road-proxy-v3/internal/version.BuildDate=${BUILD_DATE}"
 
+rm -rf "${OUT_DIR}"
 mkdir -p "${OUT_DIR}"
 
 build_one() {
@@ -59,7 +60,6 @@ build_one "road-proxy" "./cmd/road"
 build_one "road-server" "./cmd/server"
 build_one "road-client" "./cmd/client"
 build_one "plugin-studio" "./cmd/plugin-studio"
-build_one "voice-server" "./cmd/voice-server"
 
 rm -rf "${OUT_DIR}/configs" "${OUT_DIR}/plugins" "${OUT_DIR}/locales" "${OUT_DIR}/docs" "${OUT_DIR}/compat-profiles" "${OUT_DIR}/deploy"
 cp -R "${REPO_ROOT}/configs" "${OUT_DIR}/configs"
@@ -79,11 +79,15 @@ popd >/dev/null
 if [[ "${ARCH}" == "amd64" ]]; then
   echo ""
   echo "Refreshing legacy linux paths under ${REPO_ROOT}/${OUTPUT_ROOT}"
+  rm -f "${REPO_ROOT}/${OUTPUT_ROOT}/road-proxy" \
+    "${REPO_ROOT}/${OUTPUT_ROOT}/road-server" \
+    "${REPO_ROOT}/${OUTPUT_ROOT}/road-client" \
+    "${REPO_ROOT}/${OUTPUT_ROOT}/plugin-studio" \
+    "${REPO_ROOT}/${OUTPUT_ROOT}/voice-server"
   cp -f "${OUT_DIR}/road-proxy" "${REPO_ROOT}/${OUTPUT_ROOT}/road-proxy"
   cp -f "${OUT_DIR}/road-server" "${REPO_ROOT}/${OUTPUT_ROOT}/road-server"
   cp -f "${OUT_DIR}/road-client" "${REPO_ROOT}/${OUTPUT_ROOT}/road-client"
   cp -f "${OUT_DIR}/plugin-studio" "${REPO_ROOT}/${OUTPUT_ROOT}/plugin-studio"
-  cp -f "${OUT_DIR}/voice-server" "${REPO_ROOT}/${OUTPUT_ROOT}/voice-server"
   rm -rf "${REPO_ROOT}/${OUTPUT_ROOT}/configs" "${REPO_ROOT}/${OUTPUT_ROOT}/plugins" "${REPO_ROOT}/${OUTPUT_ROOT}/locales" "${REPO_ROOT}/${OUTPUT_ROOT}/docs" "${REPO_ROOT}/${OUTPUT_ROOT}/compat-profiles" "${REPO_ROOT}/${OUTPUT_ROOT}/deploy"
   cp -R "${OUT_DIR}/configs" "${REPO_ROOT}/${OUTPUT_ROOT}/configs"
   cp -R "${OUT_DIR}/plugins" "${REPO_ROOT}/${OUTPUT_ROOT}/plugins"
@@ -100,8 +104,7 @@ if [[ "${ARCH}" == "amd64" ]]; then
   chmod +x "${REPO_ROOT}/${OUTPUT_ROOT}/road-proxy" \
     "${REPO_ROOT}/${OUTPUT_ROOT}/road-server" \
     "${REPO_ROOT}/${OUTPUT_ROOT}/road-client" \
-    "${REPO_ROOT}/${OUTPUT_ROOT}/plugin-studio" \
-    "${REPO_ROOT}/${OUTPUT_ROOT}/voice-server"
+    "${REPO_ROOT}/${OUTPUT_ROOT}/plugin-studio"
 fi
 
 echo ""
