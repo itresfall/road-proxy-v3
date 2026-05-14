@@ -327,7 +327,8 @@ func runUDPStressBot(
 		_ = conn.SetReadDeadline(time.Now().Add(500 * time.Millisecond))
 		n, readErr := conn.Read(buf)
 		if readErr != nil {
-			if ne, ok := readErr.(net.Error); ok && ne.Timeout() {
+			if isRetryableUDPReadError(readErr) {
+				time.Sleep(30 * time.Millisecond)
 				continue
 			}
 			return fmt.Errorf("read snapshot: %w", readErr)

@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -502,15 +503,32 @@ func (c *diagnosticCollector) note(kind, path, message string) {
 }
 
 func safeZipName(raw string) (string, error) {
-	name := filepath.ToSlash(filepath.Clean(strings.TrimSpace(raw)))
+	candidate := strings.TrimSpace(raw)
+	if candidate == "" {
+		return "", fmt.Errorf("empty zip entry name")
+	}
+	if filepath.IsAbs(candidate) || filepath.VolumeName(candidate) != "" || looksLikeWindowsAbs(candidate) {
+		return "", fmt.Errorf("unsafe zip entry name %q", raw)
+	}
+	name := path.Clean(strings.ReplaceAll(candidate, `\`, `/`))
 	name = strings.TrimPrefix(name, "./")
 	if name == "" || name == "." {
 		return "", fmt.Errorf("empty zip entry name")
 	}
-	if filepath.IsAbs(raw) || strings.HasPrefix(name, "/") || strings.HasPrefix(name, "../") || strings.Contains(name, "/../") || name == ".." {
+	if strings.HasPrefix(name, "/") || strings.HasPrefix(name, "../") || strings.Contains(name, "/../") || name == ".." {
 		return "", fmt.Errorf("unsafe zip entry name %q", raw)
 	}
 	return name, nil
+}
+
+func looksLikeWindowsAbs(raw string) bool {
+	if strings.HasPrefix(raw, `\`) || strings.HasPrefix(raw, `/`) {
+		return true
+	}
+	return len(raw) >= 3 &&
+		((raw[0] >= 'a' && raw[0] <= 'z') || (raw[0] >= 'A' && raw[0] <= 'Z')) &&
+		raw[1] == ':' &&
+		(raw[2] == '\\' || raw[2] == '/')
 }
 
 func regularFileExists(path string) bool {

@@ -7,11 +7,19 @@ import (
 )
 
 func IsDefaultRelativePath(raw, defaultPath string) bool {
-	trimmed := strings.TrimSpace(raw)
-	if trimmed == "" {
+	normalizedRaw := normalizeComparablePath(raw)
+	if normalizedRaw == "" {
 		return true
 	}
-	return filepath.Clean(trimmed) == filepath.Clean(defaultPath)
+	return normalizedRaw == normalizeComparablePath(defaultPath)
+}
+
+func normalizeComparablePath(raw string) string {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return ""
+	}
+	return filepath.ToSlash(filepath.Clean(strings.ReplaceAll(trimmed, `\`, `/`)))
 }
 
 // ResolveExistingPath tries to resolve a relative path by checking:

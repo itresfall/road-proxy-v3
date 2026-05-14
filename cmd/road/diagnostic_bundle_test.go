@@ -95,6 +95,8 @@ func TestSafeZipNameRejectsTraversal(t *testing.T) {
 		"..",
 		"../x.txt",
 		"safe/../../x.txt",
+		`C:\tmp\x.txt`,
+		`\tmp\x.txt`,
 		filepath.Join(string(filepath.Separator), "tmp", "x.txt"),
 	}
 	for _, name := range badNames {

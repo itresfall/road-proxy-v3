@@ -1183,13 +1183,25 @@ func roundTripUDPConnResult(conn net.Conn, payload string, timeout time.Duration
 		if err == nil {
 			return string(buf[:n]), nil
 		}
-		if ne, ok := err.(net.Error); ok && ne.Timeout() {
+		if isRetryableUDPReadError(err) {
+			time.Sleep(30 * time.Millisecond)
 			continue
 		}
 		return "", fmt.Errorf("read udp payload: %w", err)
 	}
 
 	return "", fmt.Errorf("read udp payload: timeout after %s", timeout)
+}
+
+func isRetryableUDPReadError(err error) bool {
+	if err == nil {
+		return false
+	}
+	if ne, ok := err.(net.Error); ok && ne.Timeout() {
+		return true
+	}
+	text := strings.ToLower(err.Error())
+	return strings.Contains(text, "connection refused") || strings.Contains(text, "connection reset by peer")
 }
 
 func waitNoError(t *testing.T, ch <-chan error, timeout time.Duration, name string) {

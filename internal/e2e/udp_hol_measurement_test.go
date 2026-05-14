@@ -261,13 +261,25 @@ func readPacket(conn net.Conn, timeout time.Duration) ([]byte, error) {
 	if timeout <= 0 {
 		timeout = time.Millisecond
 	}
-	_ = conn.SetReadDeadline(time.Now().Add(timeout))
+	deadline := time.Now().Add(timeout)
 	buf := make([]byte, holBulkPayloadSize+1024)
-	n, err := conn.Read(buf)
-	if err != nil {
+
+	for {
+		if remaining := time.Until(deadline); remaining <= 0 {
+			return nil, fmt.Errorf("timeout after %s", timeout)
+		} else {
+			_ = conn.SetReadDeadline(time.Now().Add(remaining))
+		}
+		n, err := conn.Read(buf)
+		if err == nil {
+			return append([]byte(nil), buf[:n]...), nil
+		}
+		if isRetryableUDPReadError(err) {
+			time.Sleep(30 * time.Millisecond)
+			continue
+		}
 		return nil, err
 	}
-	return append([]byte(nil), buf[:n]...), nil
 }
 
 type durationSummary struct {
