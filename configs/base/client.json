@@ -1,0 +1,29 @@
+{
+  "listen_addr": "127.0.0.1:25568",
+  "listen_network": "tcp",
+  "server_ws_url": "ws://127.0.0.1:8080/ws",
+  "plugin_name": "minecraft",
+  "connect_retries": 3,
+  "retry_initial_delay": "300ms",
+  "retry_max_delay": "3s",
+  "ws_idle_timeout": "2m0s",
+  "ws_ping_interval": "30s",
+  "udp_session_idle_timeout": "45s",
+  "udp_metrics_log_interval": "10s",
+  "max_ws_message_bytes": 1048576,
+  "buffer_size": 32768,
+  "handshake_timeout": "5s",
+  "read_timeout": "30s",
+  "write_timeout": "30s",
+  "enable_compression": false,
+  "headers": {},
+  "logging": {
+    "format": "text"
+  },
+  "udp_record": {
+    "enabled": false,
+    "path": "logs/udp-record-client.jsonl",
+    "duration": "30s",
+    "max_events": 5000
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "buffer_size": 32768,
+  "connect_retries": 6,
+  "enable_compression": false,
+  "handshake_timeout": "5s",
+  "headers": {},
+  "listen_addr": "127.0.0.1:27015",
+  "listen_network": "udp",
+  "logging": {
+    "format": "text"
+  },
+  "max_ws_message_bytes": 1048576,
+  "plugin_name": "sven-coop-udp",
+  "read_timeout": "30s",
+  "retry_initial_delay": "100ms",
+  "retry_max_delay": "600ms",
+  "server_ws_url": "wss://road.example.com/ws",
+  "udp_metrics_log_interval": "10s",
+  "udp_record": {
+    "duration": "30s",
+    "enabled": false,
+    "max_events": 5000,
+    "path": "logs/udp-record-sven-client.jsonl"
+  },
+  "udp_session_idle_timeout": "10m0s",
+  "write_timeout": "30s",
+  "ws_idle_timeout": "10m0s",
+  "ws_ping_interval": "30s"
+}

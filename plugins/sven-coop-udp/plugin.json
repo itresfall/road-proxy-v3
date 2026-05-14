@@ -1,0 +1,65 @@
+{
+  "schema_version": "v1",
+  "name": "sven-coop-udp",
+  "version": "1.0.0",
+  "description": "Sven Co-op / GoldSrc dedicated server direct UDP profile",
+  "author": "plugin-studio",
+  "protocols": {
+    "supported": [
+      "udp",
+      "websocket"
+    ]
+  },
+  "target": {
+    "network": "udp",
+    "address": "127.0.0.1:27015"
+  },
+  "menu": {
+    "server_config": "configs/server-sven-coop.json",
+    "client_config": "configs/client-sven-coop.json"
+  },
+  "capabilities": {
+    "supports_reconnect": true,
+    "supports_multiplex": true
+  },
+  "compatibility": {
+    "status": "experimental",
+    "tested_players": 0,
+    "known_ports": [
+      {
+        "network": "udp",
+        "port": 27015,
+        "role": "target",
+        "notes": "GoldSrc/Sven Co-op default game server UDP port"
+      }
+    ],
+    "launch_args": [
+      "Run SvenDS on 127.0.0.1:27015 or 0.0.0.0:27015.",
+      "Point Sven Co-op clients at the ROAD client listen address, usually 127.0.0.1:27015.",
+      "Use the in-game console: connect 127.0.0.1:27015"
+    ],
+    "notes": [
+      "ROAD carries direct UDP traffic only; Steam server browser and Steam auth traffic are outside this tunnel.",
+      "Keep udp_peer_broadcast disabled; GoldSrc gameplay traffic is server-authoritative UDP.",
+      "For private validation prefer sv_lan 1 / direct console connect."
+    ],
+    "last_verified": "2026-05-13"
+  },
+  "runtime": {
+    "type": "json",
+    "mode": "passthrough",
+    "enable_obfuscation": false,
+    "udp_peer_broadcast": false,
+    "udp_reply_policy": "same_ip",
+    "client_pipeline": [],
+    "server_pipeline": []
+  },
+  "studio": {
+    "process_name": "svends",
+    "notes": [
+      "Sven Co-op dedicated server AppID is 276060.",
+      "Default SvenDS port is UDP 27015.",
+      "Recommended ROAD client listen address is 127.0.0.1:27015 for direct in-game connect."
+    ]
+  }
+}

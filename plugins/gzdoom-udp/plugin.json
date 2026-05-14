@@ -1,0 +1,55 @@
+{
+  "author": "plugin-studio",
+  "capabilities": {
+    "supports_multiplex": true,
+    "supports_reconnect": true
+  },
+  "compatibility": {
+    "status": "working",
+    "tested_players": 3,
+    "known_ports": [
+      {
+        "network": "udp",
+        "port": 5029,
+        "role": "target",
+        "notes": "GZDoom UDP game traffic"
+      }
+    ],
+    "launch_args": [
+      "-host 3 -netmode 1",
+      "-join 127.0.0.1 -netmode 1"
+    ],
+    "notes": [
+      "Use -netmode 1 for 3+ players; default netmode 0 can desync through a port proxy.",
+      "Keep udp_peer_broadcast disabled."
+    ],
+    "last_verified": "2026-05-11"
+  },
+  "description": "Auto-generated profile from Plugin Studio (gzdoom.exe)",
+  "menu": {
+    "client_config": "configs/client-udp.example.json",
+    "server_config": "configs/server-udp.example.json"
+  },
+  "name": "gzdoom-udp",
+  "protocols": {
+    "supported": [
+      "udp",
+      "websocket"
+    ]
+  },
+  "runtime": {
+    "client_pipeline": [],
+    "enable_obfuscation": false,
+    "mode": "passthrough",
+    "server_pipeline": [],
+    "type": "json",
+    "udp_peer_broadcast": false,
+    "udp_reply_policy": "same_ip"
+  },
+  "schema_version": "v1",
+  "target": {
+    "address": "127.0.0.1:5029",
+    "network": "udp"
+  },
+  "version": "3.0.0"
+}

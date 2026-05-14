@@ -1,0 +1,85 @@
+package plugin
+
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+	"sort"
+)
+
+type Loader struct {
+	pluginDir string
+}
+
+func NewLoader(pluginDir string) *Loader {
+	return &Loader{pluginDir: pluginDir}
+}
+
+func (l *Loader) LoadEnabled(enabled []string) (map[string]*RuntimePlugin, error) {
+	if len(enabled) == 0 {
+		return nil, fmt.Errorf("enabled plugins cannot be empty")
+	}
+
+	result := make(map[string]*RuntimePlugin, len(enabled))
+	for _, pluginName := range enabled {
+		schema, err := l.loadSchema(pluginName)
+		if err != nil {
+			return nil, err
+		}
+		result[pluginName] = NewRuntimePlugin(schema)
+	}
+
+	return result, nil
+}
+
+func (l *Loader) ListAvailable() ([]string, error) {
+	entries, err := os.ReadDir(l.pluginDir)
+	if err != nil {
+		return nil, fmt.Errorf("read plugin dir %q: %w", l.pluginDir, err)
+	}
+
+	names := make([]string, 0, len(entries))
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		names = append(names, entry.Name())
+	}
+
+	sort.Strings(names)
+	return names, nil
+}
+
+func (l *Loader) loadSchema(pluginName string) (*Schema, error) {
+	path := filepath.Join(l.pluginDir, pluginName, "plugin.json")
+	schema, err := LoadSchemaFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	if schema.Name != pluginName {
+		return nil, fmt.Errorf("plugin folder %q does not match schema name %q", pluginName, schema.Name)
+	}
+
+	return schema, nil
+}
+
+func LoadSchemaFile(path string) (*Schema, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("read plugin schema %q: %w", path, err)
+	}
+
+	var schema Schema
+	if err := json.Unmarshal(data, &schema); err != nil {
+		return nil, fmt.Errorf("parse plugin schema %q: %w", path, err)
+	}
+
+	schema.Normalize()
+	if err := schema.Validate(); err != nil {
+		return nil, fmt.Errorf("validate plugin schema %q: %w", path, err)
+	}
+
+	return &schema, nil
+}

@@ -1,0 +1,113 @@
+param(
+  [ValidateSet("amd64", "arm64")]
+  [string]$Arch = "amd64",
+  [string]$OutputRoot = "build/linux"
+)
+
+$ErrorActionPreference = "Stop"
+$repoRoot = Split-Path -Parent $PSScriptRoot
+$outDir = Join-Path $OutputRoot $Arch
+
+function Get-RoadCommit {
+  if (-not [string]::IsNullOrWhiteSpace($env:ROAD_COMMIT)) {
+    return $env:ROAD_COMMIT
+  }
+  if (-not (Test-Path -LiteralPath (Join-Path $repoRoot ".git"))) {
+    return "unknown"
+  }
+  try {
+    $commit = & git -C $repoRoot rev-parse --verify --short HEAD 2>$null
+    if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($commit)) {
+      return $commit.Trim()
+    }
+  }
+  catch {
+    return "unknown"
+  }
+  return "unknown"
+}
+
+$version = if ([string]::IsNullOrWhiteSpace($env:ROAD_VERSION)) { "0.1.0-dev" } else { $env:ROAD_VERSION }
+$commit = Get-RoadCommit
+$buildDate = if ([string]::IsNullOrWhiteSpace($env:ROAD_BUILD_DATE)) { (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ") } else { $env:ROAD_BUILD_DATE }
+$ldflags = "-X road-proxy-v3/internal/version.Version=$version -X road-proxy-v3/internal/version.Commit=$commit -X road-proxy-v3/internal/version.BuildDate=$buildDate"
+
+if (-not (Test-Path -LiteralPath $outDir)) {
+  [void](New-Item -ItemType Directory -Path $outDir -Force)
+}
+
+$commands = @(
+  @{ Name = "road-proxy"; Path = "./cmd/road" },
+  @{ Name = "road-server"; Path = "./cmd/server" },
+  @{ Name = "road-client"; Path = "./cmd/client" },
+  @{ Name = "plugin-studio"; Path = "./cmd/plugin-studio" },
+  @{ Name = "voice-server"; Path = "./cmd/voice-server" }
+)
+
+Push-Location $repoRoot
+try {
+  $oldGOOS = $env:GOOS
+  $oldGOARCH = $env:GOARCH
+  $oldCGO = $env:CGO_ENABLED
+
+  $env:GOOS = "linux"
+  $env:GOARCH = $Arch
+  $env:CGO_ENABLED = "0"
+
+  foreach ($cmd in $commands) {
+    $name = $cmd.Name
+    $path = $cmd.Path
+    $outPath = Join-Path $outDir $name
+    Write-Host "Building linux/$Arch -> $name"
+    go build -ldflags $ldflags -o $outPath $path
+    if ($LASTEXITCODE -ne 0) {
+      throw "build failed: linux/$Arch $name"
+    }
+  }
+
+  foreach ($asset in @("configs", "plugins", "locales", "docs", "compat-profiles", "deploy")) {
+    $dest = Join-Path $outDir $asset
+    if (Test-Path -LiteralPath $dest) {
+      Remove-Item -LiteralPath $dest -Recurse -Force
+    }
+    Copy-Item -Path ".\$asset" -Destination $outDir -Recurse -Force
+  }
+
+  foreach ($doc in @("README.md", "CHANGELOG.md", "LICENSE", "SECURITY.md", "CONTRIBUTING.md")) {
+    if (Test-Path -LiteralPath $doc) {
+      Copy-Item -LiteralPath $doc -Destination $outDir -Force
+    }
+  }
+
+  if ($Arch -eq "amd64") {
+    Write-Host ""
+    Write-Host "Writing legacy linux paths in $OutputRoot"
+    foreach ($cmd in $commands) {
+      $name = $cmd.Name
+      $src = Join-Path $outDir $name
+      $dst = Join-Path $OutputRoot $name
+      Copy-Item -LiteralPath $src -Destination $dst -Force
+    }
+    foreach ($asset in @("configs", "plugins", "locales", "docs", "compat-profiles", "deploy")) {
+      $dest = Join-Path $OutputRoot $asset
+      if (Test-Path -LiteralPath $dest) {
+        Remove-Item -LiteralPath $dest -Recurse -Force
+      }
+      Copy-Item -Path ".\$asset" -Destination $OutputRoot -Recurse -Force
+    }
+    foreach ($doc in @("README.md", "CHANGELOG.md", "LICENSE", "SECURITY.md", "CONTRIBUTING.md")) {
+      if (Test-Path -LiteralPath $doc) {
+        Copy-Item -LiteralPath $doc -Destination $OutputRoot -Force
+      }
+    }
+  }
+
+  Write-Host ""
+  Write-Host "Linux build complete: $outDir"
+}
+finally {
+  $env:GOOS = $oldGOOS
+  $env:GOARCH = $oldGOARCH
+  $env:CGO_ENABLED = $oldCGO
+  Pop-Location
+}

@@ -1,0 +1,54 @@
+{
+  "schema_version": "v1",
+  "name": "minecraft-bedrock-udp",
+  "version": "3.0.0",
+  "description": "Minecraft Bedrock UDP profile for v3 engine",
+  "author": "road",
+  "protocols": {
+    "supported": [
+      "udp",
+      "websocket"
+    ]
+  },
+  "target": {
+    "network": "udp",
+    "address": "127.0.0.1:19132"
+  },
+  "menu": {
+    "server_config": "configs/server-udp.example.json",
+    "client_config": "configs/client-udp.example.json"
+  },
+  "capabilities": {
+    "supports_reconnect": true,
+    "supports_multiplex": true
+  },
+  "compatibility": {
+    "status": "unknown",
+    "tested_players": 0,
+    "known_ports": [
+      {
+        "network": "udp",
+        "port": 19132,
+        "role": "target",
+        "notes": "Minecraft Bedrock RakNet UDP server port"
+      },
+      {
+        "network": "udp",
+        "port": 19133,
+        "role": "client_listen",
+        "notes": "Suggested local ROAD client listen port"
+      }
+    ],
+    "notes": [
+      "Profile is prepared but needs real multi-player validation."
+    ]
+  },
+  "runtime": {
+    "type": "json",
+    "mode": "passthrough",
+    "enable_obfuscation": false,
+    "udp_reply_policy": "same_ip",
+    "client_pipeline": [],
+    "server_pipeline": []
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "schema_version": "v1",
+  "name": "udp-sync-stress",
+  "version": "3.0.0",
+  "description": "High-rate UDP sync stress profile for multi-client proxy validation",
+  "author": "road",
+  "protocols": {
+    "supported": [
+      "udp",
+      "websocket"
+    ]
+  },
+  "target": {
+    "network": "udp",
+    "address": "127.0.0.1:42000"
+  },
+  "menu": {
+    "server_config": "configs/server-udp.example.json",
+    "client_config": "configs/client-udp.example.json"
+  },
+  "capabilities": {
+    "supports_reconnect": true,
+    "supports_multiplex": true
+  },
+  "compatibility": {
+    "status": "working",
+    "tested_players": 3,
+    "known_ports": [
+      {
+        "network": "udp",
+        "port": 42000,
+        "role": "target",
+        "notes": "Synthetic UDP sync stress target"
+      }
+    ],
+    "notes": [
+      "Synthetic validation profile for ROAD UDP behavior, not a game profile."
+    ],
+    "last_verified": "2026-05-11"
+  },
+  "runtime": {
+    "type": "json",
+    "mode": "passthrough",
+    "enable_obfuscation": false,
+    "udp_reply_policy": "same_ip",
+    "client_pipeline": [],
+    "server_pipeline": []
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "name": "lethal-company",
+  "server": {
+    "tcp": {
+      "listen_addr": "0.0.0.0:0"
+    },
+    "http": {
+      "ws_idle_timeout": "10m0s"
+    },
+    "plugins": {
+      "enabled": [
+        "lethal-company-udp"
+      ]
+    }
+  },
+  "client": {
+    "listen_addr": "127.0.0.1:7777",
+    "listen_network": "udp",
+    "plugin_name": "lethal-company-udp",
+    "connect_retries": 6,
+    "retry_initial_delay": "100ms",
+    "retry_max_delay": "600ms",
+    "ws_idle_timeout": "10m0s",
+    "udp_session_idle_timeout": "10m0s"
+  }
+}

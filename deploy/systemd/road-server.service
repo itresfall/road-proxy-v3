@@ -1,0 +1,18 @@
+[Unit]
+Description=ROAD Proxy v3 Server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=road
+Group=road
+WorkingDirectory=/opt/road-proxy-v3
+ExecStart=/opt/road-proxy-v3/road-server -config configs/server.json
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

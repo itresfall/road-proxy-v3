@@ -1,0 +1,43 @@
+{
+  "schema_version": "compat_profile.v1",
+  "id": "minecraft-bedrock",
+  "display_name": "Minecraft Bedrock UDP",
+  "road_scope": "direct_lan_local_port_only",
+  "steam_lobby_supported": false,
+  "requires_game_launch_args": false,
+  "match": [
+    "minecraft.windows",
+    "bedrock"
+  ],
+  "exe_names": [
+    "Minecraft.Windows.exe"
+  ],
+  "steam_app_ids": [],
+  "exe_hashes": {},
+  "plugin_name": "minecraft-bedrock-udp",
+  "network": "udp",
+  "target_host": "127.0.0.1",
+  "target_port": 19132,
+  "client_listen_port": 19133,
+  "udp_peer_broadcast": false,
+  "udp_reply_policy": "same_ip",
+  "known_ports": [
+    {
+      "network": "udp",
+      "port": 19132,
+      "role": "target",
+      "notes": "Minecraft Bedrock RakNet UDP server port"
+    },
+    {
+      "network": "udp",
+      "port": 19133,
+      "role": "client_listen",
+      "notes": "Suggested local ROAD client listen port"
+    }
+  ],
+  "note_keys": [
+    "studio.profile.bedrock.note.raknet",
+    "studio.profile.bedrock.note.listen_port"
+  ],
+  "launch_advice_keys": []
+}

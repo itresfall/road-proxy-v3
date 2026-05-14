@@ -1,0 +1,21 @@
+.proxy-token
+
+# Build and release outputs
+build/
+/client
+/server
+/road
+/plugin-studio
+*.exe~
+
+# Runtime state and logs
+.road-menu-state.json
+logs/
+tmp-*.log
+tmp-*.err.log
+configs/.generated/
+configs/.generated-*.json
+
+# Local scratch folders from one-off maintenance tasks
+.document-copy-tool/
+.winutil-inspect/

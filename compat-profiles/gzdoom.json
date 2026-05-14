@@ -1,0 +1,44 @@
+{
+  "schema_version": "compat_profile.v1",
+  "id": "gzdoom",
+  "display_name": "GZDoom / ZDoom",
+  "road_scope": "direct_lan_local_port_only",
+  "steam_lobby_supported": false,
+  "requires_game_launch_args": true,
+  "match": [
+    "gzdoom",
+    "zdoom",
+    "lzdoom"
+  ],
+  "exe_names": [
+    "gzdoom.exe",
+    "zdoom.exe",
+    "lzdoom.exe"
+  ],
+  "steam_app_ids": [],
+  "exe_hashes": {},
+  "plugin_name": "gzdoom-udp",
+  "network": "udp",
+  "target_host": "127.0.0.1",
+  "target_port": 5029,
+  "client_listen_port": 5029,
+  "udp_peer_broadcast": false,
+  "udp_reply_policy": "same_ip",
+  "known_ports": [
+    {
+      "network": "udp",
+      "port": 5029,
+      "role": "target",
+      "notes": "GZDoom UDP game traffic"
+    }
+  ],
+  "note_keys": [
+    "studio.profile.gzdoom.note.netmode",
+    "studio.profile.gzdoom.note.command_netmode",
+    "studio.profile.gzdoom.note.single_client"
+  ],
+  "launch_advice_keys": [
+    "studio.profile.gzdoom.launch.host",
+    "studio.profile.gzdoom.launch.client"
+  ]
+}

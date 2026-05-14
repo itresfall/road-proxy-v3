@@ -1,0 +1,46 @@
+{
+  "schema_version": "compat_profile.v1",
+  "id": "ddnet",
+  "display_name": "DDNet / DDraceNetwork",
+  "road_scope": "direct_lan_local_port_only",
+  "steam_lobby_supported": false,
+  "requires_game_launch_args": false,
+  "match": [
+    "ddnet",
+    "dDraceNetwork",
+    "teeworlds"
+  ],
+  "exe_names": [
+    "DDNet.exe",
+    "DDNet-Server.exe",
+    "DDNet-Server_sql.exe"
+  ],
+  "steam_app_ids": [
+    412220
+  ],
+  "exe_hashes": {},
+  "plugin_name": "ddnet-udp",
+  "network": "udp",
+  "target_host": "127.0.0.1",
+  "target_port": 8303,
+  "client_listen_port": 18303,
+  "udp_peer_broadcast": false,
+  "udp_reply_policy": "same_ip",
+  "known_ports": [
+    {
+      "network": "udp",
+      "port": 8303,
+      "role": "target",
+      "notes": "DDNet default UDP server port"
+    }
+  ],
+  "note_keys": [
+    "studio.profile.ddnet.note.direct",
+    "studio.profile.ddnet.note.server_authoritative",
+    "studio.profile.ddnet.note.udp_check"
+  ],
+  "launch_advice_keys": [
+    "studio.profile.ddnet.launch.server",
+    "studio.profile.ddnet.launch.client"
+  ]
+}

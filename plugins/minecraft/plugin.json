@@ -1,0 +1,48 @@
+{
+  "schema_version": "v1",
+  "name": "minecraft",
+  "version": "3.0.0",
+  "description": "Minecraft TCP profile for v3 engine",
+  "author": "road",
+  "protocols": {
+    "supported": [
+      "tcp",
+      "websocket"
+    ]
+  },
+  "target": {
+    "network": "tcp",
+    "address": "127.0.0.1:25565"
+  },
+  "menu": {
+    "server_config": "configs/server.json",
+    "client_config": "configs/client.json"
+  },
+  "capabilities": {
+    "supports_reconnect": true,
+    "supports_multiplex": false
+  },
+  "compatibility": {
+    "status": "working",
+    "tested_players": 2,
+    "known_ports": [
+      {
+        "network": "tcp",
+        "port": 25565,
+        "role": "target",
+        "notes": "Minecraft Java server TCP port"
+      }
+    ],
+    "notes": [
+      "TCP profile; ROAD carries the direct server port."
+    ],
+    "last_verified": "2026-05-11"
+  },
+  "runtime": {
+    "type": "json",
+    "mode": "passthrough",
+    "enable_obfuscation": false,
+    "client_pipeline": [],
+    "server_pipeline": []
+  }
+}

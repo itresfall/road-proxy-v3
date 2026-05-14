@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://road-proxy-v3.local/schema/compat-profile.v1.json",
+  "title": "ROAD compatibility profile v1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "id",
+    "display_name",
+    "road_scope",
+    "steam_lobby_supported",
+    "requires_game_launch_args",
+    "plugin_name",
+    "network",
+    "target_host",
+    "target_port",
+    "client_listen_port",
+    "udp_peer_broadcast"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "compat_profile.v1"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "display_name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "road_scope": {
+      "type": "string",
+      "const": "direct_lan_local_port_only"
+    },
+    "steam_lobby_supported": {
+      "type": "boolean"
+    },
+    "requires_game_launch_args": {
+      "type": "boolean"
+    },
+    "match": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "exe_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "steam_app_ids": {
+      "description": "Optional identity signal only. A Steam AppID match does not imply Steam lobby/relay support.",
+      "type": "array",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "exe_hashes": {
+      "description": "Optional executable identity hashes. Supported key today: sha256.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "plugin_name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "network": {
+      "type": "string",
+      "enum": [
+        "tcp",
+        "udp"
+      ]
+    },
+    "target_host": {
+      "type": "string",
+      "minLength": 1
+    },
+    "target_port": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 65535
+    },
+    "client_listen_port": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 65535
+    },
+    "udp_peer_broadcast": {
+      "type": "boolean"
+    },
+    "udp_reply_policy": {
+      "type": "string",
+      "enum": [
+        "any",
+        "same_ip",
+        "strict"
+      ]
+    },
+    "known_ports": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/known_port"
+      }
+    },
+    "note_keys": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "launch_advice_keys": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "$defs": {
+    "known_port": {
+      "type": "object",
+      "required": [
+        "network",
+        "port"
+      ],
+      "properties": {
+        "network": {
+          "type": "string",
+          "enum": [
+            "tcp",
+            "udp"
+          ]
+        },
+        "port": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "role": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

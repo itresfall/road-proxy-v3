@@ -1,0 +1,41 @@
+{
+  "schema_version": "compat_profile.v1",
+  "id": "lethal-company",
+  "display_name": "Lethal Company direct/LAN UDP",
+  "road_scope": "direct_lan_local_port_only",
+  "steam_lobby_supported": false,
+  "requires_game_launch_args": false,
+  "match": [
+    "lethal"
+  ],
+  "exe_names": [
+    "Lethal Company.exe"
+  ],
+  "steam_app_ids": [
+    1966720
+  ],
+  "exe_hashes": {},
+  "plugin_name": "lethal-company-udp",
+  "network": "udp",
+  "target_host": "127.0.0.1",
+  "target_port": 7777,
+  "client_listen_port": 7777,
+  "udp_peer_broadcast": false,
+  "udp_reply_policy": "same_ip",
+  "known_ports": [
+    {
+      "network": "udp",
+      "port": 7777,
+      "role": "target",
+      "notes": "Direct/LAN/local Lethal Company UDP flow"
+    }
+  ],
+  "note_keys": [
+    "studio.profile.lethal.note.transport",
+    "studio.profile.lethal.note.localhost",
+    "studio.profile.lethal.note.single_client"
+  ],
+  "launch_advice_keys": [
+    "studio.profile.lethal.launch.localhost"
+  ]
+}

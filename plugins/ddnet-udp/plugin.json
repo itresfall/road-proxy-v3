@@ -1,0 +1,64 @@
+{
+  "schema_version": "v1",
+  "name": "ddnet-udp",
+  "version": "3.0.0",
+  "description": "DDNet / DDraceNetwork direct UDP profile for ROAD validation",
+  "author": "plugin-studio",
+  "protocols": {
+    "supported": [
+      "udp",
+      "websocket"
+    ]
+  },
+  "target": {
+    "network": "udp",
+    "address": "127.0.0.1:8303"
+  },
+  "menu": {
+    "server_config": "configs/server-ddnet.json",
+    "client_config": "configs/client-ddnet.json"
+  },
+  "capabilities": {
+    "supports_reconnect": true,
+    "supports_multiplex": true
+  },
+  "compatibility": {
+    "status": "experimental",
+    "tested_players": 0,
+    "known_ports": [
+      {
+        "network": "udp",
+        "port": 8303,
+        "role": "target",
+        "notes": "DDNet default UDP server port"
+      }
+    ],
+    "launch_args": [
+      "Run DDNet-Server on 127.0.0.1:8303.",
+      "Point DDNet clients at the ROAD client listen address, usually 127.0.0.1:18303."
+    ],
+    "notes": [
+      "Use direct connect, not Steam server browser, for ROAD validation.",
+      "Keep udp_peer_broadcast disabled; DDNet is server-authoritative UDP.",
+      "Use udp-check before the game test to establish the ROAD baseline."
+    ],
+    "last_verified": "2026-05-13"
+  },
+  "runtime": {
+    "type": "json",
+    "mode": "passthrough",
+    "enable_obfuscation": false,
+    "udp_peer_broadcast": false,
+    "udp_reply_policy": "same_ip",
+    "client_pipeline": [],
+    "server_pipeline": []
+  },
+  "studio": {
+    "process_name": "DDNet",
+    "notes": [
+      "ROAD carries DDNet direct UDP traffic only.",
+      "Default DDNet server target is 127.0.0.1:8303.",
+      "Recommended ROAD client listen address is 127.0.0.1:18303."
+    ]
+  }
+}

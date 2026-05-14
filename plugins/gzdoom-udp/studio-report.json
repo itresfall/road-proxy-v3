@@ -1,0 +1,66 @@
+{
+  "process_pid": 26544,
+  "process_name": "gzdoom.exe",
+  "capture_seconds": 120,
+  "ticks": 118,
+  "endpoint_hits": {
+    "tcp 192.0.2.15:58157 -\u003e 140.82.121.5:443 state=ESTABLISHED": 1,
+    "tcp 192.0.2.15:58158 -\u003e 172.64.149.23:80 state=ESTABLISHED": 107,
+    "tcp 192.0.2.15:58159 -\u003e 172.64.149.23:80 state=ESTABLISHED": 107,
+    "udp 0.0.0.0:5029 -\u003e *:0 state=": 118
+  },
+  "LocalPortHits": {
+    "tcp": {
+      "58157": 1,
+      "58158": 107,
+      "58159": 107
+    },
+    "udp": {
+      "5029": 118
+    }
+  },
+  "RemotePortHits": {
+    "tcp": {
+      "443": 1,
+      "80": 214
+    },
+    "udp": {}
+  },
+  "top_local_ports": {
+    "tcp": [
+      {
+        "port": 58158,
+        "hits": 107
+      },
+      {
+        "port": 58159,
+        "hits": 107
+      },
+      {
+        "port": 58157,
+        "hits": 1
+      }
+    ],
+    "udp": [
+      {
+        "port": 5029,
+        "hits": 118
+      }
+    ]
+  },
+  "top_remote_ports": {
+    "tcp": [
+      {
+        "port": 80,
+        "hits": 214
+      },
+      {
+        "port": 443,
+        "hits": 1
+      }
+    ],
+    "udp": []
+  },
+  "recommended_network": "udp",
+  "recommended_port": 58158
+}

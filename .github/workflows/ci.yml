@@ -1,0 +1,102 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Go Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Run tests
+        run: go test ./...
+
+  build-linux:
+    name: Linux Build Smoke
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build linux amd64
+        run: bash ./scripts/build-linux.sh amd64
+
+      - name: Smoke linux amd64 binary
+        run: ./build/linux/amd64/road-proxy --version
+
+      - name: Build linux arm64
+        run: bash ./scripts/build-linux.sh arm64
+
+  build-windows:
+    name: Windows Build Smoke
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build windows amd64
+        shell: pwsh
+        run: ./scripts/build-windows.ps1
+
+      - name: Smoke windows amd64 binary
+        shell: pwsh
+        run: ./build/windows/road-proxy.exe --version
+
+  release-package:
+    name: Tag Release Package
+    runs-on: windows-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    needs:
+      - test
+      - build-linux
+      - build-windows
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build release packages
+        shell: pwsh
+        run: |
+          $env:ROAD_VERSION = "${{ github.ref_name }}"
+          $env:ROAD_COMMIT = "${{ github.sha }}"
+          ./scripts/build-cross.ps1 -Package
+
+      - name: Upload release packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: road-proxy-v3-${{ github.ref_name }}
+          path: |
+            build/release/*.zip
+            build/release/*.sha256

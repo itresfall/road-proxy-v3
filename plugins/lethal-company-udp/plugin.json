@@ -1,0 +1,63 @@
+{
+  "schema_version": "v1",
+  "name": "lethal-company-udp",
+  "version": "3.0.0",
+  "description": "Lethal Company direct/LAN UDP profile for localhost:7777 experiments",
+  "author": "plugin-studio",
+  "protocols": {
+    "supported": [
+      "udp",
+      "websocket"
+    ]
+  },
+  "target": {
+    "network": "udp",
+    "address": "127.0.0.1:7777"
+  },
+  "menu": {
+    "server_config": "configs/server-lethal-company.json",
+    "client_config": "configs/client-lethal-company.json"
+  },
+  "capabilities": {
+    "supports_reconnect": true,
+    "supports_multiplex": true
+  },
+  "compatibility": {
+    "status": "experimental",
+    "tested_players": 2,
+    "known_ports": [
+      {
+        "network": "udp",
+        "port": 7777,
+        "role": "target",
+        "notes": "Direct/LAN/local Lethal Company UDP flow"
+      }
+    ],
+    "launch_args": [
+      "Point the game/mod direct or LAN target at 127.0.0.1:7777."
+    ],
+    "notes": [
+      "Official Steam lobby/relay traffic is outside ROAD.",
+      "Object/physics desync can happen on direct LAN without ROAD; compare against direct LAN before blaming the proxy.",
+      "3-player validation is still pending."
+    ],
+    "last_verified": "2026-05-11"
+  },
+  "runtime": {
+    "type": "json",
+    "mode": "passthrough",
+    "enable_obfuscation": false,
+    "udp_peer_broadcast": false,
+    "udp_reply_policy": "same_ip",
+    "client_pipeline": [],
+    "server_pipeline": []
+  },
+  "studio": {
+    "process_name": "Lethal Company",
+    "notes": [
+      "ROAD only carries direct/LAN/local IP:port traffic; official Steam lobby/relay traffic is outside this port proxy.",
+      "Use this profile when the game or mod talks to localhost:7777.",
+      "Keep udp_peer_broadcast disabled unless packet captures prove clients must receive each other's client-origin packets directly."
+    ]
+  }
+}
