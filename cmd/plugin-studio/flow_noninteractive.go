@@ -168,8 +168,9 @@ func runNonInteractiveStudio(layout app.RuntimeLayout, opts studioCLIOptions) er
 	}
 
 	clientListenAddr := fmt.Sprintf("127.0.0.1:%d", clientListenPort)
-	serverConfigPath := filepath.Join(layout.ConfigDir, fmt.Sprintf("server-%s.json", pluginName))
-	clientConfigPath := filepath.Join(layout.ConfigDir, fmt.Sprintf("client-%s.json", pluginName))
+	serverConfigName, clientConfigName := generatedConfigNames(pluginName)
+	serverConfigPath := filepath.Join(layout.ConfigDir, serverConfigName)
+	clientConfigPath := filepath.Join(layout.ConfigDir, clientConfigName)
 	serverConfigWritten, err := writeJSONIfMissing(serverConfigPath, buildServerConfigDoc(pluginName))
 	if err != nil {
 		return fmt.Errorf("write server config: %w", err)

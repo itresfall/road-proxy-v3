@@ -240,6 +240,64 @@ func TestBuildPluginDocUDPDefaultsPeerBroadcastOff(t *testing.T) {
 	}
 }
 
+func TestBuildPluginDocMenuReferencesGeneratedConfigs(t *testing.T) {
+	tests := []struct {
+		pluginName string
+		network    string
+	}{
+		{pluginName: "minecraft", network: "tcp"},
+		{pluginName: "minecraft-bedrock-udp", network: "udp"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.pluginName, func(t *testing.T) {
+			doc := buildPluginDoc(tc.pluginName, tc.network, "127.0.0.1:7777", "game.exe", false, nil, nil)
+			menu, ok := doc["menu"].(map[string]any)
+			if !ok {
+				t.Fatalf("menu doc missing or wrong type: %#v", doc["menu"])
+			}
+
+			wantServer, wantClient := generatedConfigMenuPaths(tc.pluginName)
+			if got := menu["server_config"]; got != wantServer {
+				t.Fatalf("server_config = %#v, want %q", got, wantServer)
+			}
+			if got := menu["client_config"]; got != wantClient {
+				t.Fatalf("client_config = %#v, want %q", got, wantClient)
+			}
+		})
+	}
+}
+
+func TestGeneratedConfigDocsMatchPluginIdentity(t *testing.T) {
+	const pluginName = "minecraft-bedrock-udp"
+	const network = "udp"
+	const listenAddr = "127.0.0.1:19132"
+
+	serverDoc := buildServerConfigDoc(pluginName)
+	plugins, ok := serverDoc["plugins"].(map[string]any)
+	if !ok {
+		t.Fatalf("plugins doc missing or wrong type: %#v", serverDoc["plugins"])
+	}
+	enabled, ok := plugins["enabled"].([]string)
+	if !ok {
+		t.Fatalf("plugins.enabled missing or wrong type: %#v", plugins["enabled"])
+	}
+	if len(enabled) != 1 || enabled[0] != pluginName {
+		t.Fatalf("plugins.enabled = %#v, want [%q]", enabled, pluginName)
+	}
+
+	clientDoc := buildClientConfigDoc(pluginName, network, listenAddr)
+	if got := clientDoc["plugin_name"]; got != pluginName {
+		t.Fatalf("plugin_name = %#v, want %q", got, pluginName)
+	}
+	if got := clientDoc["listen_network"]; got != network {
+		t.Fatalf("listen_network = %#v, want %q", got, network)
+	}
+	if got := clientDoc["listen_addr"]; got != listenAddr {
+		t.Fatalf("listen_addr = %#v, want %q", got, listenAddr)
+	}
+}
+
 func TestBuildPluginDocUsesProfileUDPReplyPolicy(t *testing.T) {
 	profile := &compatProfile{ID: "lethal-company", UDPReplyPolicy: "same_ip"}
 	doc := buildPluginDoc("lethal-company-udp", "udp", "127.0.0.1:7777", "Lethal Company.exe", false, nil, profile)

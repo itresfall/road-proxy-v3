@@ -276,8 +276,9 @@ func runInteractiveStudio(layout app.RuntimeLayout) {
 	}
 
 	clientListenAddr := fmt.Sprintf("127.0.0.1:%d", clientListenPort)
-	serverConfigPath := filepath.Join(layout.ConfigDir, fmt.Sprintf("server-%s.json", pluginName))
-	clientConfigPath := filepath.Join(layout.ConfigDir, fmt.Sprintf("client-%s.json", pluginName))
+	serverConfigName, clientConfigName := generatedConfigNames(pluginName)
+	serverConfigPath := filepath.Join(layout.ConfigDir, serverConfigName)
+	clientConfigPath := filepath.Join(layout.ConfigDir, clientConfigName)
 	serverConfigWritten, serverConfigErr := writeJSONIfMissing(serverConfigPath, buildServerConfigDoc(pluginName))
 	if serverConfigErr != nil {
 		fmt.Printf(sm("studio.error_server_config"), serverConfigErr)

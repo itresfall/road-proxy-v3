@@ -17,6 +17,8 @@ unless `ROAD_VERSION` is set during build.
   diagnostic plugins stay out of release packages.
 - Added repository QA coverage to catch mismatched plugin menu config templates
   before release.
+- Fixed Plugin Studio output so generated plugin menus point at the generated
+  per-plugin server/client config files instead of generic examples.
 
 ## v0.1.2 - 2026-05-14
 

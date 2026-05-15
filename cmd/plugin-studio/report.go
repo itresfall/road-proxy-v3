@@ -52,12 +52,9 @@ func sanitizePluginName(s string) string {
 }
 
 func buildPluginDoc(pluginName, network, targetAddress, processName string, udpPeerBroadcast bool, notes []string, profile *compatProfile) map[string]any {
-	serverTemplate := "configs/server.json"
-	clientTemplate := "configs/client.json"
+	serverTemplate, clientTemplate := generatedConfigMenuPaths(pluginName)
 	supportsMultiplex := false
 	if network == "udp" {
-		serverTemplate = "configs/server-udp.example.json"
-		clientTemplate = "configs/client-udp.example.json"
 		supportsMultiplex = true
 	}
 
@@ -106,6 +103,15 @@ func buildPluginDoc(pluginName, network, targetAddress, processName string, udpP
 		}
 	}
 	return doc
+}
+
+func generatedConfigNames(pluginName string) (serverName string, clientName string) {
+	return fmt.Sprintf("server-%s.json", pluginName), fmt.Sprintf("client-%s.json", pluginName)
+}
+
+func generatedConfigMenuPaths(pluginName string) (serverPath string, clientPath string) {
+	serverName, clientName := generatedConfigNames(pluginName)
+	return fmt.Sprintf("configs/%s", serverName), fmt.Sprintf("configs/%s", clientName)
 }
 
 func udpReplyPolicyForProfile(profile *compatProfile) string {
