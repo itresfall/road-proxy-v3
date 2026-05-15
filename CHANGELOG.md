@@ -22,6 +22,8 @@ unless `ROAD_VERSION` is set during build.
 - Simplified first-run console output: client mode now shows the exact in-game
   target address, and TryCloudflare mode hides noisy cloudflared logs while
   surfacing the created tunnel URL.
+- Added a built-in Settings menu for language selection, client/server config
+  editing, and normal server/client auth toggles.
 
 ## v0.1.2 - 2026-05-14
 

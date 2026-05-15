@@ -319,6 +319,97 @@ func TestApplyClientConnectionInputBlankPublicAuthKeepsExistingToken(t *testing.
 	}
 }
 
+func TestEditClientAuthSettingsCanDisableAuth(t *testing.T) {
+	cfg := config.DefaultClient()
+	cfg.AuthToken = "secret"
+	cfg.AuthHeader = "X-ROAD-Token"
+	reader := bufio.NewReader(strings.NewReader("n\n"))
+
+	if err := editClientAuthSettings(reader, cfg); err != nil {
+		t.Fatalf("editClientAuthSettings returned error: %v", err)
+	}
+	if cfg.AuthToken != "" || cfg.AuthHeader != "" {
+		t.Fatalf("client auth should be cleared, got token=%q header=%q", cfg.AuthToken, cfg.AuthHeader)
+	}
+}
+
+func TestEditServerAuthSettingsCanDisableAuth(t *testing.T) {
+	cfg := config.Default()
+	cfg.HTTP.AuthToken = "secret"
+	cfg.HTTP.AuthHeader = "X-ROAD-Token"
+	if err := cfg.Normalize(); err != nil {
+		t.Fatalf("normalize failed: %v", err)
+	}
+	reader := bufio.NewReader(strings.NewReader("n\n"))
+
+	if err := editServerAuthSettings(reader, cfg); err != nil {
+		t.Fatalf("editServerAuthSettings returned error: %v", err)
+	}
+	if cfg.HTTP.AuthToken != "" || len(cfg.HTTP.AuthTokens) != 0 || cfg.HTTP.AuthHeader != "" {
+		t.Fatalf("server auth should be cleared, got token=%q tokens=%v header=%q", cfg.HTTP.AuthToken, cfg.HTTP.AuthTokens, cfg.HTTP.AuthHeader)
+	}
+}
+
+func TestEditServerAuthSettingsCanEnableAuthWithGeneratedToken(t *testing.T) {
+	cfg := config.Default()
+	reader := bufio.NewReader(strings.NewReader("y\n\n\n"))
+
+	if err := editServerAuthSettings(reader, cfg); err != nil {
+		t.Fatalf("editServerAuthSettings returned error: %v", err)
+	}
+	if cfg.HTTP.AuthToken == "" {
+		t.Fatal("expected generated server auth token")
+	}
+	if cfg.HTTP.AuthHeader != config.DefaultAuthHeaderName {
+		t.Fatalf("auth_header = %q, want %q", cfg.HTTP.AuthHeader, config.DefaultAuthHeaderName)
+	}
+}
+
+func TestLoadEditableClientConfigPreservesEnvSecretReference(t *testing.T) {
+	t.Setenv("ROAD_TEST_TOKEN", "resolved-secret")
+	path := filepath.Join(t.TempDir(), "client.json")
+	if err := os.WriteFile(path, []byte(`{
+  "listen_addr": "127.0.0.1:25568",
+  "listen_network": "tcp",
+  "server_ws_url": "ws://127.0.0.1:8080/ws",
+  "plugin_name": "minecraft",
+  "auth_token": "env:ROAD_TEST_TOKEN"
+}`), 0o644); err != nil {
+		t.Fatalf("write client config failed: %v", err)
+	}
+
+	cfg, err := loadEditableClientConfig(path)
+	if err != nil {
+		t.Fatalf("loadEditableClientConfig returned error: %v", err)
+	}
+	if cfg.AuthToken != "env:ROAD_TEST_TOKEN" {
+		t.Fatalf("auth_token should preserve env reference, got %q", cfg.AuthToken)
+	}
+}
+
+func TestLoadEditableServerConfigPreservesEnvSecretReference(t *testing.T) {
+	t.Setenv("ROAD_TEST_TOKEN", "resolved-secret")
+	path := filepath.Join(t.TempDir(), "server.json")
+	if err := os.WriteFile(path, []byte(`{
+  "http": {
+    "auth_token": "env:ROAD_TEST_TOKEN"
+  },
+  "plugins": {
+    "enabled": ["minecraft"]
+  }
+}`), 0o644); err != nil {
+		t.Fatalf("write server config failed: %v", err)
+	}
+
+	cfg, err := loadEditableServerConfig(path)
+	if err != nil {
+		t.Fatalf("loadEditableServerConfig returned error: %v", err)
+	}
+	if cfg.HTTP.AuthToken != "env:ROAD_TEST_TOKEN" {
+		t.Fatalf("auth_token should preserve env reference, got %q", cfg.HTTP.AuthToken)
+	}
+}
+
 func TestGetServerDefaultPluginProfileReturnsAuthStatus(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "missing token", http.StatusUnauthorized)

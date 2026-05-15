@@ -24,9 +24,10 @@ func runBuiltinMenu() {
 		fmt.Println("  1) " + msg("menu.mode_server"))
 		fmt.Println("  2) " + msg("menu.mode_client"))
 		fmt.Println("  3) " + msg("menu.mode_public_server"))
-		fmt.Println("  4) " + msg("menu.exit"))
+		fmt.Println("  4) " + msg("menu.mode_settings"))
+		fmt.Println("  5) " + msg("menu.exit"))
 
-		choice, err := readChoice(reader, msg("menu.choice_1_4"), 1, 4, 4)
+		choice, err := readChoice(reader, msg("menu.choice_1_5"), 1, 5, 5)
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				return
@@ -49,6 +50,10 @@ func runBuiltinMenu() {
 				fmt.Printf(msg("common.error_line"), err)
 			}
 		case 4:
+			if err := startSettingsFlow(reader); err != nil {
+				fmt.Printf(msg("common.error_line"), err)
+			}
+		case 5:
 			return
 		}
 	}
