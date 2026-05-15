@@ -43,6 +43,20 @@ Run the interactive menu:
 ./build/windows/road-proxy.exe
 ```
 
+Interactive menu layout:
+
+```text
+1) Engine/Server
+2) Client
+3) Public Server Wizard
+4) Settings
+5) Exit
+```
+
+Use `Settings` to change language, edit the base client/server config, toggle
+normal server/client auth tokens, and inspect config paths. Public Server Wizard
+keeps generated token auth enabled by default for public endpoints.
+
 Run server and client directly from source:
 
 ```powershell
@@ -246,7 +260,8 @@ locales/tr.json
 ```
 
 The active language is configured in `configs/app.json`. Missing translation
-keys fall back to English. Translation rules are documented in:
+keys fall back to English. The all-in-one `road-proxy` binary can also change
+language from `Settings -> Language`. Translation rules are documented in:
 
 ```text
 docs/I18N.md
