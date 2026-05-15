@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -217,7 +218,7 @@ func TestGetServerDefaultPluginProfileUsesDataInfo(t *testing.T) {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"default_plugin":"ddnet-udp","default_network":"udp"}`))
+		_, _ = w.Write([]byte(`{"service":"road-proxy-v3","default_plugin":"ddnet-udp","default_network":"udp"}`))
 	}))
 	defer server.Close()
 
@@ -230,6 +231,21 @@ func TestGetServerDefaultPluginProfileUsesDataInfo(t *testing.T) {
 	}
 	if profile.Name != "ddnet-udp" || profile.TargetNetwork != "udp" {
 		t.Fatalf("unexpected profile: %#v", profile)
+	}
+}
+
+func TestGetServerDefaultPluginProfileRejectsUnexpectedService(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"service":"not-road","default_plugin":"minecraft","default_network":"tcp"}`))
+	}))
+	defer server.Close()
+
+	cfg := config.DefaultClient()
+	cfg.ServerWSURL = strings.Replace(server.URL, "http://", "ws://", 1) + "/ws"
+
+	if _, err := getServerDefaultPluginProfile(cfg); err == nil {
+		t.Fatal("expected unexpected service error")
 	}
 }
 
@@ -247,6 +263,38 @@ func TestApplyClientProfileFromServerRejectsExplicitBadEndpoint(t *testing.T) {
 	}
 	if cfg.PluginName != "minecraft" {
 		t.Fatalf("plugin should not be changed on profile fetch failure, got %q", cfg.PluginName)
+	}
+}
+
+func TestShouldRequireClientProfileForPublicSavedEndpoint(t *testing.T) {
+	cfg := config.DefaultClient()
+	cfg.ServerWSURL = "wss://road.example.com/ws"
+	if !shouldRequireClientProfile(cfg, false) {
+		t.Fatal("public saved endpoint should require profile verification")
+	}
+
+	cfg.ServerWSURL = "ws://127.0.0.1:8080/ws"
+	if shouldRequireClientProfile(cfg, false) {
+		t.Fatal("unchanged local endpoint should not require profile verification")
+	}
+
+	cfg.AuthToken = "local-token"
+	if !shouldRequireClientProfile(cfg, false) {
+		t.Fatal("configured auth token should require profile verification")
+	}
+}
+
+func TestPreflightClientCheckReturnsAuthStatus(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "missing token", http.StatusUnauthorized)
+	}))
+	defer server.Close()
+
+	cfg := config.DefaultClient()
+	cfg.ServerWSURL = strings.Replace(server.URL, "http://", "ws://", 1) + "/ws"
+
+	if err := preflightClientCheck(cfg, true); err == nil {
+		t.Fatal("expected preflight auth failure")
 	}
 }
 
@@ -362,6 +410,24 @@ func TestEditServerAuthSettingsCanEnableAuthWithGeneratedToken(t *testing.T) {
 	}
 	if cfg.HTTP.AuthHeader != config.DefaultAuthHeaderName {
 		t.Fatalf("auth_header = %q, want %q", cfg.HTTP.AuthHeader, config.DefaultAuthHeaderName)
+	}
+}
+
+func TestEditServerAuthSettingsPreservesExtraTokens(t *testing.T) {
+	cfg := config.Default()
+	cfg.HTTP.AuthToken = "primary"
+	cfg.HTTP.AuthTokens = []string{"backup-a", "backup-b"}
+	cfg.HTTP.AuthHeader = "X-ROAD-Token"
+	reader := bufio.NewReader(strings.NewReader("y\n\n\n"))
+
+	if err := editServerAuthSettings(reader, cfg); err != nil {
+		t.Fatalf("editServerAuthSettings returned error: %v", err)
+	}
+	if cfg.HTTP.AuthToken != "primary" {
+		t.Fatalf("primary token changed: %q", cfg.HTTP.AuthToken)
+	}
+	if !reflect.DeepEqual(cfg.HTTP.AuthTokens, []string{"backup-a", "backup-b"}) {
+		t.Fatalf("extra tokens not preserved: %#v", cfg.HTTP.AuthTokens)
 	}
 }
 

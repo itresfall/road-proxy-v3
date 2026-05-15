@@ -74,6 +74,8 @@ type serverPluginProfile struct {
 	TargetNetwork string
 }
 
+const expectedServerServiceName = "road-proxy-v3"
+
 func getServerDefaultPluginProfile(cfg *config.ClientConfig) (serverPluginProfile, error) {
 	base, err := apiBaseFromWSURL(cfg.ServerWSURL)
 	if err != nil {
@@ -81,6 +83,7 @@ func getServerDefaultPluginProfile(cfg *config.ClientConfig) (serverPluginProfil
 	}
 
 	type infoResp struct {
+		Service        string `json:"service"`
 		DefaultPlugin  string `json:"default_plugin"`
 		DefaultNetwork string `json:"default_network"`
 	}
@@ -102,6 +105,9 @@ func getServerDefaultPluginProfile(cfg *config.ClientConfig) (serverPluginProfil
 
 	var info infoResp
 	if err := fetchJSON(httpClient, base+"/api/info", headers, &info); err == nil {
+		if err := validateServerServiceName(info.Service); err != nil {
+			return serverPluginProfile{}, err
+		}
 		if strings.TrimSpace(info.DefaultPlugin) != "" {
 			return serverPluginProfile{
 				Name:          info.DefaultPlugin,
@@ -137,6 +143,52 @@ func getServerDefaultPluginProfile(cfg *config.ClientConfig) (serverPluginProfil
 	}
 
 	return serverPluginProfile{}, fmt.Errorf(msg("ws.default_plugin_not_found"))
+}
+
+func shouldRequireClientProfile(cfg *config.ClientConfig, endpointChanged bool) bool {
+	if endpointChanged {
+		return true
+	}
+	if strings.TrimSpace(cfg.AuthToken) != "" {
+		return true
+	}
+	u, err := url.Parse(strings.TrimSpace(cfg.ServerWSURL))
+	if err != nil || strings.TrimSpace(u.Host) == "" {
+		return false
+	}
+	return !isLocalHostOrLAN(u.Hostname())
+}
+
+func preflightClientCheck(cfg *config.ClientConfig, required bool) error {
+	if !required {
+		return nil
+	}
+	base, err := apiBaseFromWSURL(cfg.ServerWSURL)
+	if err != nil {
+		return err
+	}
+
+	type infoResp struct {
+		Service string `json:"service"`
+	}
+
+	httpClient := &http.Client{Timeout: 6 * time.Second}
+	headers := clientProfileFetchHeaders(cfg)
+	var info infoResp
+	if err := fetchJSON(httpClient, base+"/api/info", headers, &info); err != nil {
+		if isAuthHTTPStatus(err) {
+			return fmt.Errorf(msg("client.preflight_auth_failed"), err)
+		}
+		return fmt.Errorf(msg("client.preflight_failed"), err)
+	}
+	return validateServerServiceName(info.Service)
+}
+
+func validateServerServiceName(service string) error {
+	if strings.TrimSpace(service) != expectedServerServiceName {
+		return fmt.Errorf(msg("ws.unexpected_service"), strings.TrimSpace(service), expectedServerServiceName)
+	}
+	return nil
 }
 
 func apiBaseFromWSURL(wsURL string) (string, error) {

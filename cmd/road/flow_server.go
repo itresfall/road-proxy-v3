@@ -78,6 +78,10 @@ func startServerFlow(reader *bufio.Reader) error {
 	fmt.Printf(msg("common.runtime_line"), layout.Root)
 	fmt.Printf("Config: %s\n\n", configPath)
 
+	if cfg.HasOpenNoAuthListener() {
+		fmt.Println(msg("server.warn_open_no_auth"))
+	}
+
 	proxy := engine.New(cfg, logging.New(cfg.Logging.Format, "road-proxy-server"))
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()

@@ -175,7 +175,7 @@ Current behavior:
 
 - Server config accepts `http.auth_token` and `http.auth_tokens`.
 - Client config accepts `auth_token`.
-- `env:NAME` values are resolved from environment variables at config load time.
+- `env:NAME` values are kept in config files and resolved at runtime; missing env values fail runtime startup when auth depends on them.
 - If `auth_header` is omitted while a token is configured, ROAD uses `X-ROAD-Token`.
 - If `auth_header` is `Authorization`, clients send `Bearer <token>` and the server accepts both bearer and raw token values.
 - If no token is configured, auth stays disabled for local/dev compatibility.

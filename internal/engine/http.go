@@ -39,7 +39,11 @@ func (e *Engine) setupDataServer() error {
 	mux.HandleFunc("/api/ping", func(w http.ResponseWriter, r *http.Request) {
 		e.handlePing(w, r, "data")
 	})
-	mux.HandleFunc("/api/info", e.handleDataInfo)
+	if e.cfg.WSAuthEnabled() {
+		mux.HandleFunc("/api/info", e.withDataAuth(e.handleDataInfo))
+	} else {
+		mux.HandleFunc("/api/info", e.handleDataInfo)
+	}
 
 	handler := e.hostAllowMiddleware(mux)
 
@@ -194,7 +198,7 @@ func (e *Engine) proxyWebSocket(
 	selectedPlugin *plugin.RuntimePlugin,
 	sessionID string,
 ) error {
-	errCh := make(chan error, 2)
+	errCh := make(chan error, 3)
 	wsIdleTimeout := e.cfg.HTTPWSIdleTimeoutDuration()
 	wsPingInterval := e.cfg.HTTPWSPingIntervalDuration()
 	done := make(chan struct{})
@@ -289,15 +293,16 @@ func (e *Engine) proxyWebSocket(
 		defer e.bufferPool.Put(buffer)
 
 		for {
-			n, err := serverConn.Read(buffer)
+			n, readErr := serverConn.Read(buffer)
 			if n > 0 {
 				payload := buffer[:n]
 				if !selectedPlugin.Passthrough() {
-					payload, err = selectedPlugin.ProcessServerData(payload)
-					if err != nil {
-						errCh <- err
+					processed, processErr := selectedPlugin.ProcessServerData(payload)
+					if processErr != nil {
+						errCh <- processErr
 						return
 					}
+					payload = processed
 				}
 
 				if len(payload) == 0 {
@@ -311,8 +316,8 @@ func (e *Engine) proxyWebSocket(
 				e.stats.AddSessionTx(sessionID, uint64(len(payload)))
 			}
 
-			if err != nil {
-				errCh <- err
+			if readErr != nil {
+				errCh <- readErr
 				return
 			}
 		}
@@ -333,7 +338,7 @@ func (e *Engine) proxyWebSocketUDP(
 	selectedPlugin *plugin.RuntimePlugin,
 	sessionID string,
 ) error {
-	errCh := make(chan error, 2)
+	errCh := make(chan error, 3)
 	wsIdleTimeout := e.cfg.HTTPWSIdleTimeoutDuration()
 	wsPingInterval := e.cfg.HTTPWSPingIntervalDuration()
 	done := make(chan struct{})
@@ -464,7 +469,7 @@ func (e *Engine) proxyWebSocketUDP(
 		buffer := make([]byte, udputil.ReadBufferSize(e.cfg.TCP.BufferSize))
 
 		for {
-			n, sourceAddr, oversized, err := udputil.ReadDatagram(packetConn, buffer, e.cfg.TCP.BufferSize)
+			n, sourceAddr, oversized, readErr := udputil.ReadDatagram(packetConn, buffer, e.cfg.TCP.BufferSize)
 			if n > 0 {
 				if oversized {
 					targetOversizeLogOnce.Do(func() {
@@ -482,11 +487,12 @@ func (e *Engine) proxyWebSocketUDP(
 				}
 				payload := buffer[:n]
 				if !selectedPlugin.Passthrough() {
-					payload, err = selectedPlugin.ProcessServerData(payload)
-					if err != nil {
-						errCh <- err
+					processed, processErr := selectedPlugin.ProcessServerData(payload)
+					if processErr != nil {
+						errCh <- processErr
 						return
 					}
+					payload = processed
 				}
 
 				if len(payload) == 0 {
@@ -503,8 +509,8 @@ func (e *Engine) proxyWebSocketUDP(
 				e.stats.ObserveSessionUDPTx(sessionID, now, payload)
 			}
 
-			if err != nil {
-				errCh <- err
+			if readErr != nil {
+				errCh <- readErr
 				return
 			}
 		}
@@ -695,19 +701,24 @@ func (e *Engine) handleDataInfo(w http.ResponseWriter, _ *http.Request) {
 		"service": "road-proxy-v3",
 		"plane":   "data",
 		"ws_path": e.cfg.HTTP.WSEndpoint,
-		"listen":  e.cfg.HTTP.ListenAddr,
 		"auth": map[string]interface{}{
-			"enabled":      e.cfg.WSAuthEnabled(),
-			"header":       e.cfg.WSAuthHeader(),
-			"tokens_count": len(e.cfg.WSAuthTokens()),
+			"enabled": e.cfg.WSAuthEnabled(),
+			"header":  e.cfg.WSAuthHeader(),
 		},
 		"default_plugin":  e.defaultPlugin.Name(),
-		"default_target":  e.defaultPlugin.TargetAddress(),
-		"enabled_plugins": e.cfg.Plugins.Enabled,
-		"buffer":          e.cfg.TCP.BufferSize,
-		"transport":       "tcp+websocket",
 		"default_network": e.defaultPlugin.TargetNetwork(),
 	})
+}
+
+func (e *Engine) withDataAuth(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !e.validateWSToken(r) {
+			e.stats.IncError()
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		next(w, r)
+	}
 }
 
 func (e *Engine) handleControlInfo(w http.ResponseWriter, _ *http.Request) {

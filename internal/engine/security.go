@@ -11,16 +11,19 @@ import (
 )
 
 type websocketSecurityState struct {
-	mu         sync.Mutex
-	active     int
-	activeByIP map[string]int
-	rateByIP   map[string]*websocketRateWindow
+	mu            sync.Mutex
+	active        int
+	activeByIP    map[string]int
+	rateByIP      map[string]*websocketRateWindow
+	lastRatePrune time.Time
 }
 
 type websocketRateWindow struct {
 	start time.Time
 	count int
 }
+
+const websocketRateWindowTTL = 2 * time.Minute
 
 func (e *Engine) admitWebSocket(r *http.Request) (func(), int, string) {
 	clientIP := e.clientIP(r)
@@ -30,6 +33,7 @@ func (e *Engine) admitWebSocket(r *http.Request) (func(), int, string) {
 	defer e.wsSecurity.mu.Unlock()
 
 	if limit := e.cfg.HTTP.RateLimitPerMinute; limit > 0 {
+		e.pruneWebSocketRateWindowsLocked(now)
 		window := e.wsSecurity.rateByIP[clientIP]
 		if window == nil || now.Sub(window.start) >= time.Minute {
 			window = &websocketRateWindow{start: now}
@@ -68,6 +72,22 @@ func (e *Engine) admitWebSocket(r *http.Request) (func(), int, string) {
 		}
 		e.wsSecurity.activeByIP[clientIP]--
 	}, http.StatusOK, ""
+}
+
+func (e *Engine) pruneWebSocketRateWindowsLocked(now time.Time) {
+	if e.wsSecurity.lastRatePrune.IsZero() {
+		e.wsSecurity.lastRatePrune = now
+		return
+	}
+	if now.Sub(e.wsSecurity.lastRatePrune) < time.Minute {
+		return
+	}
+	e.wsSecurity.lastRatePrune = now
+	for ip, window := range e.wsSecurity.rateByIP {
+		if window == nil || now.Sub(window.start) >= websocketRateWindowTTL {
+			delete(e.wsSecurity.rateByIP, ip)
+		}
+	}
 }
 
 func (e *Engine) hostAllowed(r *http.Request) bool {

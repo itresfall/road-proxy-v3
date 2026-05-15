@@ -626,7 +626,7 @@ Security knobs:
 - `http.auth_token` / `http.auth_tokens`: enable shared-token auth for WebSocket and control API.
 - `auth_token`: client-side token sent during WebSocket connect.
 - `auth_header`: header name, defaults to `X-ROAD-Token` when a token is set.
-- `env:NAME`: token values can be read from environment variables.
+- `env:NAME`: token values can be read from environment variables; runtime startup fails if the variable is missing or empty.
 - `configs/server-cloudflare-local.json`: local-only Cloudflare/Nginx preset for `127.0.0.1:8080` and `127.0.0.1:8081`.
 - `allowed_hosts` / `allowed_origins`: optional Host and browser Origin allowlists.
 - `max_connections`, `max_connections_per_ip`, `rate_limit_per_minute`: optional public deployment limits.

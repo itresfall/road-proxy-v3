@@ -78,9 +78,11 @@ func (e *Engine) Start(ctx context.Context) error {
 		return err
 	}
 	if err := e.setupDataServer(); err != nil {
+		e.closeStartupResources()
 		return err
 	}
 	if err := e.setupControlServer(); err != nil {
+		e.closeStartupResources()
 		return err
 	}
 
@@ -139,6 +141,14 @@ func (e *Engine) closeUDPRecorder() {
 	}
 }
 
+func (e *Engine) closeStartupResources() {
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := e.shutdown(shutdownCtx); err != nil {
+		e.logger.Printf("startup cleanup failed: %v", err)
+	}
+}
+
 func (e *Engine) loadEnabledPlugins() error {
 	loadedPlugins, err := e.loader.LoadEnabled(e.cfg.Plugins.Enabled)
 	if err != nil {
@@ -157,8 +167,15 @@ func (e *Engine) loadEnabledPlugins() error {
 		return fmt.Errorf("default plugin %q is not loaded", defaultName)
 	}
 	e.defaultPlugin = defaultPlugin
-	e.stats.RegisterPlugins(e.cfg.Plugins.Enabled)
-	for _, name := range e.cfg.Plugins.Enabled {
+	enabledNames := make([]string, 0, len(loadedPlugins))
+	for _, rawName := range e.cfg.Plugins.Enabled {
+		name := strings.TrimSpace(rawName)
+		if name != "" {
+			enabledNames = append(enabledNames, name)
+		}
+	}
+	e.stats.RegisterPlugins(enabledNames)
+	for _, name := range enabledNames {
 		if p := loadedPlugins[name]; p != nil && p.UDPPeerBroadcast() {
 			e.logger.Printf("warning: plugin %s has udp_peer_broadcast enabled; use only for proven peer/lockstep UDP games", name)
 		}
@@ -288,14 +305,15 @@ func (e *Engine) copyBuffered(
 	defer e.bufferPool.Put(buffer)
 
 	for {
-		n, err := src.Read(buffer)
+		n, readErr := src.Read(buffer)
 		if n > 0 {
 			payload := buffer[:n]
 			if processor != nil {
-				payload, err = processor(payload)
-				if err != nil {
-					return err
+				processed, processErr := processor(payload)
+				if processErr != nil {
+					return processErr
 				}
+				payload = processed
 			}
 
 			if len(payload) > 0 {
@@ -308,8 +326,8 @@ func (e *Engine) copyBuffered(
 			}
 		}
 
-		if err != nil {
-			return err
+		if readErr != nil {
+			return readErr
 		}
 	}
 }

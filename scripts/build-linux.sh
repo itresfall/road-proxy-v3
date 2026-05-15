@@ -63,6 +63,23 @@ copy_release_plugins() {
   done
 }
 
+remove_release_internal_files() {
+  local destination_root="$1"
+  local docs_dir="${destination_root}/docs"
+  local plugins_dir="${destination_root}/plugins"
+
+  if [[ -d "${docs_dir}" ]]; then
+    rm -f "${docs_dir}"/PROJECT-*.md \
+      "${docs_dir}"/*DRAFT*.md \
+      "${docs_dir}"/*SPIKE*.md \
+      "${docs_dir}"/*AUDIT*.md \
+      "${docs_dir}"/ROAD-UDP-TEST-REPORT*.md
+  fi
+  if [[ -d "${plugins_dir}" ]]; then
+    find "${plugins_dir}" -type f -name "studio-report.json" -delete
+  fi
+}
+
 VERSION="${ROAD_VERSION:-0.1.0-dev}"
 COMMIT="${ROAD_COMMIT:-$(git -C "${REPO_ROOT}" rev-parse --short HEAD 2>/dev/null || true)}"
 COMMIT="${COMMIT:-unknown}"
@@ -95,6 +112,7 @@ cp -R "${REPO_ROOT}/locales" "${OUT_DIR}/locales"
 cp -R "${REPO_ROOT}/docs" "${OUT_DIR}/docs"
 cp -R "${REPO_ROOT}/compat-profiles" "${OUT_DIR}/compat-profiles"
 cp -R "${REPO_ROOT}/deploy" "${OUT_DIR}/deploy"
+remove_release_internal_files "${OUT_DIR}"
 cp -f "${REPO_ROOT}/README.md" "${OUT_DIR}/README.md"
 cp -f "${REPO_ROOT}/CHANGELOG.md" "${OUT_DIR}/CHANGELOG.md"
 cp -f "${REPO_ROOT}/LICENSE" "${OUT_DIR}/LICENSE"
@@ -121,6 +139,7 @@ if [[ "${ARCH}" == "amd64" ]]; then
   cp -R "${OUT_DIR}/docs" "${REPO_ROOT}/${OUTPUT_ROOT}/docs"
   cp -R "${OUT_DIR}/compat-profiles" "${REPO_ROOT}/${OUTPUT_ROOT}/compat-profiles"
   cp -R "${OUT_DIR}/deploy" "${REPO_ROOT}/${OUTPUT_ROOT}/deploy"
+  remove_release_internal_files "${REPO_ROOT}/${OUTPUT_ROOT}"
   cp -f "${OUT_DIR}/README.md" "${REPO_ROOT}/${OUTPUT_ROOT}/README.md"
   cp -f "${OUT_DIR}/CHANGELOG.md" "${REPO_ROOT}/${OUTPUT_ROOT}/CHANGELOG.md"
   cp -f "${OUT_DIR}/LICENSE" "${REPO_ROOT}/${OUTPUT_ROOT}/LICENSE"

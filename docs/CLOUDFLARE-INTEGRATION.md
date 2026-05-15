@@ -97,14 +97,15 @@ From any machine:
 
 ```bash
 curl -sS https://proxy.example.com/api/health
-curl -sS https://proxy.example.com/api/info
+curl -sS -H "X-ROAD-Token: $ROAD_WS_TOKEN" https://proxy.example.com/api/info
 ```
 
 Expected:
 
 1. `/api/health` returns `status=ok`.
-2. Client connects with `wss://.../ws`.
-3. No continuous reconnect loop logs.
+2. `/api/info` returns ROAD metadata when the auth token is included.
+3. Client connects with `wss://.../ws`.
+4. No continuous reconnect loop logs.
 
 ## Frequent Issues
 

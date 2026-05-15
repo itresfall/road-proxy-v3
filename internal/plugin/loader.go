@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 )
 
 type Loader struct {
@@ -22,7 +23,14 @@ func (l *Loader) LoadEnabled(enabled []string) (map[string]*RuntimePlugin, error
 	}
 
 	result := make(map[string]*RuntimePlugin, len(enabled))
-	for _, pluginName := range enabled {
+	for _, rawPluginName := range enabled {
+		pluginName := strings.TrimSpace(rawPluginName)
+		if pluginName == "" {
+			return nil, fmt.Errorf("enabled plugin name cannot be empty")
+		}
+		if _, exists := result[pluginName]; exists {
+			return nil, fmt.Errorf("enabled plugin %q is duplicated", pluginName)
+		}
 		schema, err := l.loadSchema(pluginName)
 		if err != nil {
 			return nil, err
@@ -59,7 +67,7 @@ func (l *Loader) loadSchema(pluginName string) (*Schema, error) {
 	}
 
 	if schema.Name != pluginName {
-		return nil, fmt.Errorf("plugin folder %q does not match schema name %q", pluginName, schema.Name)
+		return nil, fmt.Errorf("plugin schema name %q does not match folder %q", schema.Name, pluginName)
 	}
 
 	return schema, nil

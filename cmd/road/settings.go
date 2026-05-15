@@ -282,12 +282,12 @@ func loadEditableServerConfig(path string) (*config.Config, error) {
 
 func validateEditableClientConfig(cfg *config.ClientConfig) error {
 	clone := *cfg
-	return clone.Normalize()
+	return clone.NormalizeWithOptions(config.ClientNormalizeOptions{ValidateServerWSURL: true, AllowMissingEnvSecrets: true})
 }
 
 func validateEditableServerConfig(cfg *config.Config) error {
 	clone := *cfg
-	return clone.Normalize()
+	return clone.NormalizeWithOptions(config.NormalizeOptions{AllowMissingEnvSecrets: true})
 }
 
 func readSettingString(reader *bufio.Reader, label, current string) (string, error) {
@@ -427,25 +427,50 @@ func editServerAuthSettings(reader *bufio.Reader, cfg *config.Config) error {
 		return nil
 	}
 
-	currentToken := firstString(cfg.WSAuthTokens())
-	if currentToken == "" {
-		currentToken, err = generateWizardToken()
+	extraTokens := append([]string(nil), cfg.HTTP.AuthTokens...)
+	rawToken := strings.TrimSpace(cfg.HTTP.AuthToken)
+	if rawToken == "" && len(extraTokens) > 0 {
+		rawToken = strings.TrimSpace(extraTokens[0])
+	}
+	if rawToken == "" {
+		rawToken, err = generateWizardToken()
 		if err != nil {
 			return fmt.Errorf("generate auth token: %w", err)
 		}
 	}
-	token, err := readSettingString(reader, msg("settings.auth_token"), currentToken)
+	token, err := readSettingString(reader, msg("settings.auth_token"), rawToken)
 	if err != nil {
 		return err
 	}
 	cfg.HTTP.AuthToken = strings.TrimSpace(token)
-	cfg.HTTP.AuthTokens = []string{}
+	cfg.HTTP.AuthTokens = preserveExtraAuthTokens(extraTokens, cfg.HTTP.AuthToken)
 	header, err := readSettingString(reader, msg("settings.auth_header"), defaultIfEmpty(cfg.HTTP.AuthHeader, config.DefaultAuthHeaderName))
 	if err != nil {
 		return err
 	}
 	cfg.HTTP.AuthHeader = strings.TrimSpace(header)
 	return nil
+}
+
+func preserveExtraAuthTokens(existing []string, primary string) []string {
+	primary = strings.TrimSpace(primary)
+	seen := map[string]struct{}{}
+	if primary != "" {
+		seen[primary] = struct{}{}
+	}
+	out := make([]string, 0, len(existing))
+	for _, token := range existing {
+		token = strings.TrimSpace(token)
+		if token == "" {
+			continue
+		}
+		if _, ok := seen[token]; ok {
+			continue
+		}
+		seen[token] = struct{}{}
+		out = append(out, token)
+	}
+	return out
 }
 
 func finishSettingsSave(reader *bufio.Reader) error {

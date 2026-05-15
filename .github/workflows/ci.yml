@@ -25,6 +25,21 @@ jobs:
       - name: Run tests
         run: go test ./...
 
+      - name: Run go vet
+        run: go vet ./...
+
+      - name: Check gofmt
+        run: |
+          unformatted="$(gofmt -l $(git ls-files '*.go'))"
+          if [ -n "$unformatted" ]; then
+            echo "gofmt violations:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: Validate all configs
+        run: go run ./cmd/road validate --all-configs
+
       - name: Validate compatibility profiles
         run: go test ./internal/repoqa -run TestRepositoryCompatProfilesLoad -count=1
 
@@ -49,6 +64,12 @@ jobs:
 
       - name: Check linux package plugin filter
         run: test ! -d ./build/linux/amd64/plugins/udp-sync-stress
+
+      - name: Check linux package internal file filter
+        run: |
+          test ! -f ./build/linux/amd64/plugins/gzdoom-udp/studio-report.json
+          test ! -f ./build/linux/amd64/docs/PROJECT-TODO.md
+          test ! -f ./build/linux/amd64/docs/PLUGIN-STUDIO-CAPTURE-REPLAY-DRAFT.md
 
       - name: Build linux arm64
         run: bash ./scripts/build-linux.sh arm64
@@ -79,6 +100,15 @@ jobs:
         run: |
           if (Test-Path -LiteralPath "./build/windows/plugins/udp-sync-stress") {
             throw "source-only plugin leaked into windows build output"
+          }
+          if (Test-Path -LiteralPath "./build/windows/plugins/gzdoom-udp/studio-report.json") {
+            throw "studio report leaked into windows build output"
+          }
+          if (Test-Path -LiteralPath "./build/windows/docs/PROJECT-TODO.md") {
+            throw "internal project TODO leaked into windows build output"
+          }
+          if (Test-Path -LiteralPath "./build/windows/docs/PLUGIN-STUDIO-CAPTURE-REPLAY-DRAFT.md") {
+            throw "draft doc leaked into windows build output"
           }
 
       - name: Build windows arm64

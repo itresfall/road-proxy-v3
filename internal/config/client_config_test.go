@@ -290,7 +290,29 @@ func TestLoadClientEnablesAuthTokenConfig(t *testing.T) {
 	if err != nil {
 		t.Fatalf("load client config failed: %v", err)
 	}
-	if cfg.AuthToken != "client-secret" || cfg.AuthHeader != "X-Proxy-Token" {
+	if cfg.AuthToken != "env:ROAD_PROXY_TEST_CLIENT_AUTH_TOKEN" || cfg.AuthHeader != "X-Proxy-Token" {
 		t.Fatalf("unexpected auth config: auth_token=%q auth_header=%q", cfg.AuthToken, cfg.AuthHeader)
+	}
+	if got := ResolveSecret(cfg.AuthToken); got != "client-secret" {
+		t.Fatalf("auth_token env did not resolve at runtime: %q", got)
+	}
+}
+
+func TestLoadClientRejectsMissingEnvAuthToken(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "client.json")
+	raw := `{
+  "listen_addr": "127.0.0.1:25568",
+  "server_ws_url": "ws://127.0.0.1:8080/ws",
+  "auth_token": "env:ROAD_PROXY_TEST_MISSING_CLIENT_AUTH_TOKEN"
+}`
+	if err := os.WriteFile(path, []byte(raw), 0o644); err != nil {
+		t.Fatalf("write client config failed: %v", err)
+	}
+
+	if _, err := LoadClient(path); err == nil {
+		t.Fatal("expected missing env auth token to fail runtime load")
+	}
+	if _, err := LoadClientWithOptions(path, ClientNormalizeOptions{ValidateServerWSURL: true, AllowMissingEnvSecrets: true}); err != nil {
+		t.Fatalf("validation load should allow missing env auth token: %v", err)
 	}
 }

@@ -78,6 +78,31 @@ function Copy-ReleasePlugins {
   }
 }
 
+function Remove-ReleaseInternalFiles {
+  param([string]$DestinationRoot)
+
+  $docsDir = Join-Path $DestinationRoot "docs"
+  if (Test-Path -LiteralPath $docsDir) {
+    $internalDocPatterns = @(
+      "PROJECT-*.md",
+      "*DRAFT*.md",
+      "*SPIKE*.md",
+      "*AUDIT*.md",
+      "ROAD-UDP-TEST-REPORT*.md"
+    )
+    foreach ($pattern in $internalDocPatterns) {
+      Get-ChildItem -LiteralPath $docsDir -Filter $pattern -File -ErrorAction SilentlyContinue |
+        Remove-Item -Force
+    }
+  }
+
+  $pluginsDir = Join-Path $DestinationRoot "plugins"
+  if (Test-Path -LiteralPath $pluginsDir) {
+    Get-ChildItem -LiteralPath $pluginsDir -Filter "studio-report.json" -Recurse -File -ErrorAction SilentlyContinue |
+      Remove-Item -Force
+  }
+}
+
 Push-Location $repoRoot
 try {
   $oldGOOS = $env:GOOS
@@ -107,6 +132,7 @@ try {
     Copy-Item -Path ".\$asset" -Destination $outDir -Recurse -Force
   }
   Copy-ReleasePlugins $outDir
+  Remove-ReleaseInternalFiles $outDir
 
   foreach ($doc in @("README.md", "CHANGELOG.md", "LICENSE", "SECURITY.md", "CONTRIBUTING.md")) {
     if (Test-Path -LiteralPath $doc) {
@@ -137,6 +163,7 @@ try {
       Copy-Item -Path ".\$asset" -Destination $OutputRoot -Recurse -Force
     }
     Copy-ReleasePlugins $OutputRoot
+    Remove-ReleaseInternalFiles $OutputRoot
     foreach ($doc in @("README.md", "CHANGELOG.md", "LICENSE", "SECURITY.md", "CONTRIBUTING.md")) {
       if (Test-Path -LiteralPath $doc) {
         Copy-Item -LiteralPath $doc -Destination $OutputRoot -Force

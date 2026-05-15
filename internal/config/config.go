@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"net"
 	"os"
 	"strings"
 	"time"
@@ -37,6 +38,10 @@ type Config struct {
 	Plugins   PluginsConfig   `json:"plugins"`
 	Logging   LoggingConfig   `json:"logging"`
 	UDPRecord UDPRecordConfig `json:"udp_record"`
+}
+
+type NormalizeOptions struct {
+	AllowMissingEnvSecrets bool
 }
 
 type TCPConfig struct {
@@ -153,6 +158,10 @@ func Default() *Config {
 }
 
 func Load(path string) (*Config, error) {
+	return LoadWithOptions(path, NormalizeOptions{})
+}
+
+func LoadWithOptions(path string, options NormalizeOptions) (*Config, error) {
 	cfg := Default()
 
 	data, err := os.ReadFile(path)
@@ -165,7 +174,7 @@ func Load(path string) (*Config, error) {
 		return nil, fmt.Errorf("parse config %q: %w", path, err)
 	}
 
-	if err := cfg.Normalize(); err != nil {
+	if err := cfg.NormalizeWithOptions(options); err != nil {
 		return nil, err
 	}
 
@@ -173,6 +182,10 @@ func Load(path string) (*Config, error) {
 }
 
 func (c *Config) Normalize() error {
+	return c.NormalizeWithOptions(NormalizeOptions{})
+}
+
+func (c *Config) NormalizeWithOptions(options NormalizeOptions) error {
 	if c.TCP.ListenAddr == "" {
 		c.TCP.ListenAddr = defaultTCPListenAddr
 	}
@@ -185,9 +198,13 @@ func (c *Config) Normalize() error {
 	if c.HTTP.WSEndpoint == "" {
 		c.HTTP.WSEndpoint = defaultWSEndpoint
 	}
-	c.HTTP.AuthToken = ResolveSecret(c.HTTP.AuthToken)
-	c.HTTP.AuthTokens = normalizeSecretList(c.HTTP.AuthToken, c.HTTP.AuthTokens)
-	if len(c.HTTP.AuthTokens) > 0 {
+	c.HTTP.AuthToken = strings.TrimSpace(c.HTTP.AuthToken)
+	c.HTTP.AuthTokens = normalizeRawSecretExtras(c.HTTP.AuthToken, c.HTTP.AuthTokens)
+	authTokens, err := normalizeSecretListWithOptions(c.HTTP.AuthToken, c.HTTP.AuthTokens, options.AllowMissingEnvSecrets, "http.auth_token")
+	if err != nil {
+		return err
+	}
+	if len(authTokens) > 0 {
 		c.HTTP.AuthHeader = normalizeAuthHeaderName(c.HTTP.AuthHeader)
 		if c.HTTP.AuthHeader == "" {
 			c.HTTP.AuthHeader = DefaultAuthHeaderName
@@ -227,6 +244,11 @@ func (c *Config) Normalize() error {
 	if len(c.Plugins.Enabled) == 0 {
 		return fmt.Errorf("plugins.enabled must include at least one plugin")
 	}
+	enabledPlugins, err := normalizePluginNameList(c.Plugins.Enabled)
+	if err != nil {
+		return err
+	}
+	c.Plugins.Enabled = enabledPlugins
 	if err := c.Logging.Normalize(); err != nil {
 		return err
 	}
@@ -429,24 +451,112 @@ func AuthHeaderValue(header, token string) string {
 }
 
 func normalizeSecretList(primary string, extra []string) []string {
+	tokens, _ := normalizeSecretListWithOptions(primary, extra, true, "")
+	return tokens
+}
+
+func normalizeSecretListWithOptions(primary string, extra []string, allowMissingEnv bool, field string) ([]string, error) {
 	seen := map[string]struct{}{}
 	out := []string{}
-	add := func(raw string) {
-		value := ResolveSecret(raw)
+	add := func(raw string, fieldName string) error {
+		value, err := resolveSecretWithOptions(raw, fieldName, allowMissingEnv)
+		if err != nil {
+			return err
+		}
 		if value == "" {
-			return
+			return nil
 		}
 		if _, ok := seen[value]; ok {
-			return
+			return nil
 		}
 		seen[value] = struct{}{}
 		out = append(out, value)
+		return nil
 	}
-	add(primary)
+	if err := add(primary, field); err != nil {
+		return nil, err
+	}
+	for i, token := range extra {
+		fieldName := field
+		if fieldName != "" {
+			fieldName = fmt.Sprintf("http.auth_tokens[%d]", i)
+		}
+		if err := add(token, fieldName); err != nil {
+			return nil, err
+		}
+	}
+	return out, nil
+}
+
+func resolveSecretWithOptions(raw string, field string, allowMissingEnv bool) (string, error) {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return "", nil
+	}
+	if !strings.HasPrefix(strings.ToLower(value), "env:") {
+		return value, nil
+	}
+	name := strings.TrimSpace(value[len("env:"):])
+	if name == "" {
+		if allowMissingEnv {
+			return "", nil
+		}
+		return "", fmt.Errorf("invalid %s: env reference is empty", defaultIfEmpty(field, "secret"))
+	}
+	resolved := strings.TrimSpace(os.Getenv(name))
+	if resolved == "" && !allowMissingEnv {
+		return "", fmt.Errorf("invalid %s: environment variable %s is not set or empty", defaultIfEmpty(field, "secret"), name)
+	}
+	return resolved, nil
+}
+
+func normalizeRawSecretExtras(primary string, extra []string) []string {
+	primary = strings.TrimSpace(primary)
+	seen := map[string]struct{}{}
+	if primary != "" {
+		seen[primary] = struct{}{}
+	}
+	out := make([]string, 0, len(extra))
 	for _, token := range extra {
-		add(token)
+		token = strings.TrimSpace(token)
+		if token == "" {
+			continue
+		}
+		if _, ok := seen[token]; ok {
+			continue
+		}
+		seen[token] = struct{}{}
+		out = append(out, token)
 	}
 	return out
+}
+
+func defaultIfEmpty(value string, fallback string) string {
+	if strings.TrimSpace(value) == "" {
+		return fallback
+	}
+	return value
+}
+
+func IsWildcardListenAddr(addr string) bool {
+	host, _, err := net.SplitHostPort(strings.TrimSpace(addr))
+	if err != nil {
+		if strings.HasPrefix(strings.TrimSpace(addr), ":") {
+			host = ""
+		} else {
+			return false
+		}
+	}
+	host = strings.Trim(strings.TrimSpace(host), "[]")
+	return host == "" || host == "0.0.0.0" || host == "::"
+}
+
+func (c *Config) HasOpenNoAuthListener() bool {
+	if c == nil || c.WSAuthEnabled() {
+		return false
+	}
+	return (c.HTTP.Enabled && IsWildcardListenAddr(c.HTTP.ListenAddr)) ||
+		(c.Control.Enabled && IsWildcardListenAddr(c.Control.ListenAddr))
 }
 
 func normalizeStringList(values []string) []string {
@@ -464,6 +574,26 @@ func normalizeStringList(values []string) []string {
 		out = append(out, value)
 	}
 	return out
+}
+
+func normalizePluginNameList(values []string) ([]string, error) {
+	seen := map[string]struct{}{}
+	out := make([]string, 0, len(values))
+	for _, raw := range values {
+		value := strings.TrimSpace(raw)
+		if value == "" {
+			return nil, fmt.Errorf("plugins.enabled contains an empty plugin name")
+		}
+		if _, ok := seen[value]; ok {
+			return nil, fmt.Errorf("plugins.enabled contains duplicate plugin %q", value)
+		}
+		seen[value] = struct{}{}
+		out = append(out, value)
+	}
+	if len(out) == 0 {
+		return nil, fmt.Errorf("plugins.enabled must include at least one plugin")
+	}
+	return out, nil
 }
 
 func normalizeAuthHeaderName(raw string) string {

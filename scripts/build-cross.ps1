@@ -85,6 +85,31 @@ function Copy-ReleasePlugins {
   }
 }
 
+function Remove-ReleaseInternalFiles {
+  param([string]$DestinationRoot)
+
+  $docsDir = Join-Path $DestinationRoot "docs"
+  if (Test-Path -LiteralPath $docsDir) {
+    $internalDocPatterns = @(
+      "PROJECT-*.md",
+      "*DRAFT*.md",
+      "*SPIKE*.md",
+      "*AUDIT*.md",
+      "ROAD-UDP-TEST-REPORT*.md"
+    )
+    foreach ($pattern in $internalDocPatterns) {
+      Get-ChildItem -LiteralPath $docsDir -Filter $pattern -File -ErrorAction SilentlyContinue |
+        Remove-Item -Force
+    }
+  }
+
+  $pluginsDir = Join-Path $DestinationRoot "plugins"
+  if (Test-Path -LiteralPath $pluginsDir) {
+    Get-ChildItem -LiteralPath $pluginsDir -Filter "studio-report.json" -Recurse -File -ErrorAction SilentlyContinue |
+      Remove-Item -Force
+  }
+}
+
 Push-Location $repoRoot
 try {
   $oldGOOS = $env:GOOS
@@ -137,6 +162,7 @@ try {
       Copy-Item -Path ".\$asset" -Destination $outDir -Recurse -Force
     }
     Copy-ReleasePlugins $outDir
+    Remove-ReleaseInternalFiles $outDir
 
     $scriptsDest = Join-Path $outDir "scripts"
     if (Test-Path -LiteralPath $scriptsDest) {

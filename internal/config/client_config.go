@@ -53,7 +53,8 @@ type ClientConfig struct {
 }
 
 type ClientNormalizeOptions struct {
-	ValidateServerWSURL bool
+	ValidateServerWSURL    bool
+	AllowMissingEnvSecrets bool
 }
 
 func DefaultClient() *ClientConfig {
@@ -135,8 +136,12 @@ func (c *ClientConfig) NormalizeWithOptions(options ClientNormalizeOptions) erro
 	if c.PluginName == "" {
 		c.PluginName = defaultClientPluginName
 	}
-	c.AuthToken = ResolveSecret(c.AuthToken)
-	if c.AuthToken != "" {
+	c.AuthToken = strings.TrimSpace(c.AuthToken)
+	authToken, err := resolveSecretWithOptions(c.AuthToken, "client.auth_token", options.AllowMissingEnvSecrets)
+	if err != nil {
+		return err
+	}
+	if authToken != "" {
 		c.AuthHeader = normalizeAuthHeaderName(c.AuthHeader)
 		if c.AuthHeader == "" {
 			c.AuthHeader = DefaultAuthHeaderName

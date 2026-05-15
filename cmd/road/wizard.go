@@ -81,6 +81,9 @@ func startPublicServerWizard(reader *bufio.Reader) error {
 		return nil
 	}
 
+	fmt.Println()
+	fmt.Println(msg("public.auth_policy_notice"))
+
 	local, err := promptPublicServerLocalSettings(reader)
 	if err != nil {
 		return err

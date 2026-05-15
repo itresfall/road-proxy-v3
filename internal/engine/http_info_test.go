@@ -117,3 +117,38 @@ func TestHandleControlInfoIncludesAuthDisabled(t *testing.T) {
 		t.Fatalf("expected auth.enabled=false, got=%v", auth["enabled"])
 	}
 }
+
+func TestHandleDataInfoRequiresAuthWhenConfigured(t *testing.T) {
+	cfg := config.Default()
+	cfg.HTTP.AuthToken = "secret-token"
+	cfg.HTTP.AuthHeader = "X-ROAD-Token"
+	e := New(cfg, nil)
+	e.defaultPlugin = plugin.NewRuntimePlugin(&plugin.Schema{
+		SchemaVersion: plugin.SchemaVersionV1,
+		Name:          "minecraft",
+		Version:       "3.0.0",
+		Target: plugin.Target{
+			Network: "tcp",
+			Address: "127.0.0.1:25565",
+		},
+		Runtime: plugin.RuntimeConfig{
+			Type: plugin.RuntimeTypeJSON,
+			Mode: plugin.RuntimeModePassthrough,
+		},
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/api/info", nil)
+	rec := httptest.NewRecorder()
+	e.withDataAuth(e.handleDataInfo)(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("expected unauthorized without token, got=%d", rec.Code)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/api/info", nil)
+	req.Header.Set("X-ROAD-Token", "secret-token")
+	rec = httptest.NewRecorder()
+	e.withDataAuth(e.handleDataInfo)(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected OK with token, got=%d body=%s", rec.Code, rec.Body.String())
+	}
+}

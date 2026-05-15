@@ -53,14 +53,6 @@ func (m *udpSessionMetrics) snapshot(now time.Time) udpSessionMetricsSnapshot {
 	}
 }
 
-func parseRakNetSequence(payload []byte) (uint32, bool) {
-	return udputil.ParseRakNetSequence(payload)
-}
-
-func seqForwardDistance(expected uint32, received uint32) uint32 {
-	return udputil.SeqForwardDistance(expected, received)
-}
-
 func formatUDPLossSummary(s udpFlowMetricsSnapshot) string {
 	return udputil.FormatLossSummary(s)
 }

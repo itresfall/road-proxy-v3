@@ -35,7 +35,8 @@ func startClientFlow(reader *bufio.Reader) error {
 	if err != nil {
 		return err
 	}
-	if err := applyClientProfileFromServer(cfg, endpointChanged); err != nil {
+	requireProfile := shouldRequireClientProfile(cfg, endpointChanged)
+	if err := applyClientProfileFromServer(cfg, requireProfile); err != nil {
 		return err
 	}
 
@@ -53,6 +54,10 @@ func startClientFlow(reader *bufio.Reader) error {
 	fmt.Printf("Config: %s\n\n", configPath)
 
 	if err := ensureClientPortAvailable(reader, cfg); err != nil {
+		return err
+	}
+
+	if err := preflightClientCheck(cfg, requireProfile); err != nil {
 		return err
 	}
 

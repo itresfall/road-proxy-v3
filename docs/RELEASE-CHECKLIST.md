@@ -20,9 +20,14 @@ Run from the repository root:
 
 ```powershell
 go test ./...
+go vet ./...
 go run ./cmd/road validate --all-configs
 go run ./cmd/road validate-plugin plugins/gzdoom-udp/plugin.json
 go run ./cmd/road validate-plugin plugins/ddnet-udp/plugin.json
+go run ./cmd/road validate-plugin plugins/lethal-company-udp/plugin.json
+go run ./cmd/road validate-plugin plugins/minecraft/plugin.json
+go run ./cmd/road validate-plugin plugins/minecraft-bedrock-udp/plugin.json
+go run ./cmd/road validate-plugin plugins/sven-coop-udp/plugin.json
 ```
 
 Build packages:

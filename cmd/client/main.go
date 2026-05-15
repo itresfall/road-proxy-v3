@@ -21,6 +21,7 @@ func main() {
 
 	configPath := flag.String("config", "configs/client.json", tr.T("cmd.client.flag_config"))
 	showVersion := flag.Bool("version", false, tr.T("cmd.flag_version"))
+	skipPreflight := flag.Bool("skip-preflight", false, "skip startup server preflight check")
 	flag.Parse()
 
 	if *showVersion {
@@ -42,6 +43,11 @@ func main() {
 	cfg, err := config.LoadClient(resolvedConfigPath)
 	if err != nil {
 		log.Fatalf(tr.T("cmd.client.error.config_load_failed"), err)
+	}
+	if !*skipPreflight {
+		if err := runClientPreflight(cfg); err != nil {
+			log.Fatalf("client preflight failed: %v", err)
+		}
 	}
 
 	logger := logging.New(cfg.Logging.Format, "road-client")

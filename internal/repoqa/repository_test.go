@@ -39,11 +39,11 @@ func TestRepositoryConfigsLoad(t *testing.T) {
 			case base == "plugin.schema.v1.json":
 				validatePluginSchemaDocument(t, path)
 			case strings.HasPrefix(base, "client"):
-				if _, err := config.LoadClient(path); err != nil {
+				if _, err := config.LoadClientWithOptions(path, config.ClientNormalizeOptions{ValidateServerWSURL: true, AllowMissingEnvSecrets: true}); err != nil {
 					t.Fatalf("load client config failed: %v", err)
 				}
 			case strings.HasPrefix(base, "server"):
-				if _, err := config.Load(path); err != nil {
+				if _, err := config.LoadWithOptions(path, config.NormalizeOptions{AllowMissingEnvSecrets: true}); err != nil {
 					t.Fatalf("load server config failed: %v", err)
 				}
 			default:
@@ -113,7 +113,7 @@ func TestReleaseGamePluginMenuConfigsMatchPlugin(t *testing.T) {
 			}
 
 			serverPath := filepath.Join(root, filepath.FromSlash(schema.Menu.ServerConfig))
-			serverCfg, err := config.Load(serverPath)
+			serverCfg, err := config.LoadWithOptions(serverPath, config.NormalizeOptions{AllowMissingEnvSecrets: true})
 			if err != nil {
 				t.Fatalf("load menu server config failed: %v", err)
 			}
@@ -122,7 +122,7 @@ func TestReleaseGamePluginMenuConfigsMatchPlugin(t *testing.T) {
 			}
 
 			clientPath := filepath.Join(root, filepath.FromSlash(schema.Menu.ClientConfig))
-			clientCfg, err := config.LoadClient(clientPath)
+			clientCfg, err := config.LoadClientWithOptions(clientPath, config.ClientNormalizeOptions{ValidateServerWSURL: true, AllowMissingEnvSecrets: true})
 			if err != nil {
 				t.Fatalf("load menu client config failed: %v", err)
 			}

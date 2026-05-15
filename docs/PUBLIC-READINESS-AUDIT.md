@@ -75,7 +75,7 @@ Fix: packaging now removes existing `road-proxy-v3_*.zip` and matching `.sha256`
 ## Residual Risks
 
 - Default example server configs bind data/control to `0.0.0.0` for LAN/dev convenience and do not enable auth. Internet-facing users must use Public Server Wizard or `configs/server-cloudflare-local.json` with a real token.
-- `configs/server-cloudflare-local.json` uses `env:ROAD_WS_TOKEN`; if the environment variable is empty, auth is disabled. This is documented, but operators must set the variable.
+- `configs/server-cloudflare-local.json` uses `env:ROAD_WS_TOKEN`; runtime startup now fails if the environment variable is empty, so operators must set it before deployment.
 - `trust_proxy_headers=true` is safe only behind Cloudflare or another trusted reverse proxy. Direct exposure with spoofable proxy headers is not supported.
 - UDP compatibility remains game-dependent. ROAD can prove transport behavior with `udp-check`, DDNet, and Sven Co-op baselines, but games that embed peer addresses or rely on official Steam/EOS relay traffic may still need protocol-specific work.
 - Windows arm64 builds are produced as experimental artifacts and still need runtime testing on real hardware.

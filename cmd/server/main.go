@@ -49,6 +49,9 @@ func main() {
 	}
 
 	logger := logging.New(cfg.Logging.Format, "road-server")
+	if cfg.HasOpenNoAuthListener() {
+		logger.Print(tr.T("server.warn_open_no_auth"))
+	}
 	proxy := engine.New(cfg, logger)
 
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)

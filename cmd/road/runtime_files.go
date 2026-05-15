@@ -46,7 +46,7 @@ func writeJSONFile(path string, value any, label string) error {
 		return fmt.Errorf(msg("runtime.marshal_failed"), label, err)
 	}
 	data = append(data, '\n')
-	if err := os.WriteFile(path, data, 0o644); err != nil {
+	if err := os.WriteFile(path, data, 0o600); err != nil {
 		return fmt.Errorf(msg("runtime.save_failed"), label, err)
 	}
 	return nil

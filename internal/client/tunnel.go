@@ -377,7 +377,7 @@ func (t *Tunnel) openWebSocket(
 }
 
 func (t *Tunnel) readFromUDPSession(packetConn net.PacketConn, session *udpSession) error {
-	errCh := make(chan error, 1)
+	pingErrCh := make(chan error, 1)
 	wsIdleTimeout := t.cfg.WSIdleTimeoutDuration()
 	wsPingInterval := t.cfg.WSPingIntervalDuration()
 	var localOversizeLogOnce sync.Once
@@ -411,9 +411,10 @@ func (t *Tunnel) readFromUDPSession(packetConn net.PacketConn, session *udpSessi
 					session.writeMu.Unlock()
 					if err != nil {
 						select {
-						case errCh <- err:
+						case pingErrCh <- err:
 						default:
 						}
+						session.close()
 						return
 					}
 				}
@@ -429,8 +430,8 @@ func (t *Tunnel) readFromUDPSession(packetConn net.PacketConn, session *udpSessi
 		msgType, payload, err := session.wsConn.ReadMessage()
 		if err != nil {
 			select {
-			case pingErr := <-errCh:
-				if pingErr != nil {
+			case pingErr := <-pingErrCh:
+				if pingErr != nil && normalizeProxyError(err) == nil {
 					return pingErr
 				}
 			default:
@@ -634,7 +635,7 @@ func (t *Tunnel) buildDialHeaders() http.Header {
 }
 
 func (t *Tunnel) proxy(localConn net.Conn, wsConn *websocket.Conn) error {
-	errCh := make(chan error, 2)
+	errCh := make(chan error, 3)
 	wsIdleTimeout := t.cfg.WSIdleTimeoutDuration()
 	wsPingInterval := t.cfg.WSPingIntervalDuration()
 	done := make(chan struct{})

@@ -5,25 +5,6 @@ import (
 	"time"
 )
 
-func TestParseRakNetSequence(t *testing.T) {
-	seq, ok := parseRakNetSequence([]byte{0x84, 0x34, 0x12, 0x00})
-	if !ok {
-		t.Fatal("expected raknet sequence parse success")
-	}
-	if seq != 0x1234 {
-		t.Fatalf("unexpected sequence: %d", seq)
-	}
-}
-
-func TestParseRakNetSequenceRejectsUnsupportedPayload(t *testing.T) {
-	if _, ok := parseRakNetSequence([]byte{0x01, 0x00, 0x00, 0x00}); ok {
-		t.Fatal("expected non-raknet packet to be rejected")
-	}
-	if _, ok := parseRakNetSequence([]byte{0x84, 0x01, 0x02}); ok {
-		t.Fatal("expected short packet to be rejected")
-	}
-}
-
 func TestUDPSessionMetricsDetectsLossAndReorder(t *testing.T) {
 	start := time.Unix(0, 0)
 	m := newUDPSessionMetrics(start)

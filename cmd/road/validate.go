@@ -134,7 +134,7 @@ func validateAllConfigs(pluginDir string, skipPlugins bool, out io.Writer) error
 }
 
 func validateServerConfig(path, pluginDir string, skipPlugins bool) error {
-	cfg, err := config.Load(path)
+	cfg, err := config.LoadWithOptions(path, config.NormalizeOptions{AllowMissingEnvSecrets: true})
 	if err != nil {
 		return err
 	}
@@ -150,7 +150,7 @@ func validateServerConfig(path, pluginDir string, skipPlugins bool) error {
 }
 
 func validateClientConfig(path, pluginDir string, skipPlugins bool) error {
-	cfg, err := config.LoadClient(path)
+	cfg, err := config.LoadClientWithOptions(path, config.ClientNormalizeOptions{ValidateServerWSURL: true, AllowMissingEnvSecrets: true})
 	if err != nil {
 		return err
 	}

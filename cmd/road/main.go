@@ -23,6 +23,7 @@ func main() {
 	}
 
 	showVersion := flag.Bool("version", false, msg("cmd.flag_version"))
+	flag.Usage = func() { printCommandHelp(os.Stdout) }
 	flag.Parse()
 	if *showVersion {
 		fmt.Println(version.String("road-proxy"))
