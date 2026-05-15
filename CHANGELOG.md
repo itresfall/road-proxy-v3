@@ -5,6 +5,19 @@ All notable release-facing changes should be recorded in this file.
 This project uses SemVer for tagged releases. Development builds use `0.1.0-dev`
 unless `ROAD_VERSION` is set during build.
 
+## Unreleased
+
+- Fixed the GZDoom menu/public-wizard profile so it uses dedicated GZDoom
+  server/client config templates instead of the generic Minecraft Bedrock UDP
+  examples.
+- Reset the Sven Co-op client template back to the local default WebSocket
+  endpoint.
+- Added release plugin filtering: user-facing build outputs now ship only game
+  plugin directories from `scripts/release-game-plugins.txt`; source-only
+  diagnostic plugins stay out of release packages.
+- Added repository QA coverage to catch mismatched plugin menu config templates
+  before release.
+
 ## v0.1.2 - 2026-05-14
 
 - Added an interactive client-menu auth token prompt for public endpoints such

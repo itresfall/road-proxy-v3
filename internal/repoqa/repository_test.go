@@ -3,9 +3,11 @@ package repoqa
 import (
 	"bytes"
 	"encoding/json"
+	"net"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -87,6 +89,48 @@ func TestRepositoryPluginsLoad(t *testing.T) {
 			}
 			if strings.TrimSpace(info.TargetAddress) == "" {
 				t.Fatal("target address is empty")
+			}
+		})
+	}
+}
+
+func TestReleaseGamePluginMenuConfigsMatchPlugin(t *testing.T) {
+	root := repositoryRoot(t)
+	releasePlugins := loadReleaseGamePluginManifest(t, root)
+	if _, ok := releasePlugins["udp-sync-stress"]; ok {
+		t.Fatal("udp-sync-stress is source-only and must not ship in release game plugin manifest")
+	}
+
+	for pluginName := range releasePlugins {
+		pluginName := pluginName
+		t.Run(pluginName, func(t *testing.T) {
+			schema, err := plugin.LoadSchemaFile(filepath.Join(root, "plugins", pluginName, "plugin.json"))
+			if err != nil {
+				t.Fatalf("load plugin schema failed: %v", err)
+			}
+			if schema.Menu.ServerConfig == "" || schema.Menu.ClientConfig == "" {
+				t.Fatal("release game plugin must define menu.server_config and menu.client_config")
+			}
+
+			serverPath := filepath.Join(root, filepath.FromSlash(schema.Menu.ServerConfig))
+			serverCfg, err := config.Load(serverPath)
+			if err != nil {
+				t.Fatalf("load menu server config failed: %v", err)
+			}
+			if len(serverCfg.Plugins.Enabled) != 1 || serverCfg.Plugins.Enabled[0] != pluginName {
+				t.Fatalf("server menu config plugins.enabled = %v, want [%s]", serverCfg.Plugins.Enabled, pluginName)
+			}
+
+			clientPath := filepath.Join(root, filepath.FromSlash(schema.Menu.ClientConfig))
+			clientCfg, err := config.LoadClient(clientPath)
+			if err != nil {
+				t.Fatalf("load menu client config failed: %v", err)
+			}
+			if clientCfg.PluginName != pluginName {
+				t.Fatalf("client menu config plugin_name = %q, want %q", clientCfg.PluginName, pluginName)
+			}
+			if clientCfg.ListenNetwork != schema.Target.Network {
+				t.Fatalf("client menu config listen_network = %q, want %q", clientCfg.ListenNetwork, schema.Target.Network)
 			}
 		})
 	}
@@ -294,6 +338,10 @@ func validateRepositoryCompatProfile(
 	if profile.TargetPort <= 0 || profile.TargetPort > 65535 {
 		t.Fatalf("target_port out of range: %d", profile.TargetPort)
 	}
+	targetHost, targetPort := parseAddressForRepoQA(t, info.TargetAddress)
+	if targetHost != profile.TargetHost || targetPort != profile.TargetPort {
+		t.Fatalf("compat target %s:%d does not match plugin target %s", profile.TargetHost, profile.TargetPort, info.TargetAddress)
+	}
 	if profile.ClientListenPort < 0 || profile.ClientListenPort > 65535 {
 		t.Fatalf("client_listen_port out of range: %d", profile.ClientListenPort)
 	}
@@ -324,6 +372,47 @@ func validateRepositoryCompatProfile(
 			t.Fatalf("Turkish locale missing compat profile key %q", key)
 		}
 	}
+}
+
+func loadReleaseGamePluginManifest(t *testing.T, root string) map[string]struct{} {
+	t.Helper()
+
+	data, err := os.ReadFile(filepath.Join(root, "scripts", "release-game-plugins.txt"))
+	if err != nil {
+		t.Fatalf("read release game plugin manifest failed: %v", err)
+	}
+	out := map[string]struct{}{}
+	for _, line := range strings.Split(string(data), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		if _, exists := out[line]; exists {
+			t.Fatalf("duplicate release plugin %q", line)
+		}
+		if _, err := os.Stat(filepath.Join(root, "plugins", line, "plugin.json")); err != nil {
+			t.Fatalf("release plugin %q missing plugin.json: %v", line, err)
+		}
+		out[line] = struct{}{}
+	}
+	if len(out) == 0 {
+		t.Fatal("release game plugin manifest is empty")
+	}
+	return out
+}
+
+func parseAddressForRepoQA(t *testing.T, address string) (string, int) {
+	t.Helper()
+
+	host, portText, err := net.SplitHostPort(address)
+	if err != nil {
+		t.Fatalf("plugin target address %q is not host:port: %v", address, err)
+	}
+	port, err := strconv.Atoi(portText)
+	if err != nil {
+		t.Fatalf("plugin target address %q has invalid port: %v", address, err)
+	}
+	return host, port
 }
 
 func validatePluginSchemaDocument(t *testing.T, path string) {

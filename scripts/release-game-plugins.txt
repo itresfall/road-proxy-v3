@@ -1,0 +1,9 @@
+# Plugin directories shipped in release/build outputs.
+# Source-only diagnostics such as udp-sync-stress stay in the repository but are
+# intentionally excluded from user-facing packages.
+ddnet-udp
+gzdoom-udp
+lethal-company-udp
+minecraft
+minecraft-bedrock-udp
+sven-coop-udp

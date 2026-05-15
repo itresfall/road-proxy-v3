@@ -44,6 +44,40 @@ $commands = @(
   @{ Name = "plugin-studio"; Path = "./cmd/plugin-studio" }
 )
 
+function Get-ReleasePluginNames {
+  $manifestPath = Join-Path $repoRoot "scripts/release-game-plugins.txt"
+  if (-not (Test-Path -LiteralPath $manifestPath)) {
+    throw "release plugin manifest missing: $manifestPath"
+  }
+  $names = Get-Content -LiteralPath $manifestPath |
+    ForEach-Object { $_.Trim() } |
+    Where-Object { $_ -ne "" -and -not $_.StartsWith("#") }
+  if (-not $names -or $names.Count -eq 0) {
+    throw "release plugin manifest is empty: $manifestPath"
+  }
+  return @($names)
+}
+
+$releasePluginNames = Get-ReleasePluginNames
+
+function Copy-ReleasePlugins {
+  param([string]$DestinationRoot)
+
+  $dest = Join-Path $DestinationRoot "plugins"
+  if (Test-Path -LiteralPath $dest) {
+    Remove-Item -LiteralPath $dest -Recurse -Force
+  }
+  [void](New-Item -ItemType Directory -Path $dest -Force)
+
+  foreach ($pluginName in $releasePluginNames) {
+    $src = Join-Path $repoRoot "plugins\$pluginName"
+    if (-not (Test-Path -LiteralPath (Join-Path $src "plugin.json"))) {
+      throw "release plugin missing plugin.json: $pluginName"
+    }
+    Copy-Item -LiteralPath $src -Destination $dest -Recurse -Force
+  }
+}
+
 Push-Location $repoRoot
 try {
   $oldGOOS = $env:GOOS
@@ -65,13 +99,14 @@ try {
     }
   }
 
-  foreach ($asset in @("configs", "plugins", "locales", "docs", "compat-profiles", "deploy")) {
+  foreach ($asset in @("configs", "locales", "docs", "compat-profiles", "deploy")) {
     $dest = Join-Path $outDir $asset
     if (Test-Path -LiteralPath $dest) {
       Remove-Item -LiteralPath $dest -Recurse -Force
     }
     Copy-Item -Path ".\$asset" -Destination $outDir -Recurse -Force
   }
+  Copy-ReleasePlugins $outDir
 
   foreach ($doc in @("README.md", "CHANGELOG.md", "LICENSE", "SECURITY.md", "CONTRIBUTING.md")) {
     if (Test-Path -LiteralPath $doc) {
@@ -94,13 +129,14 @@ try {
       $dst = Join-Path $OutputRoot $name
       Copy-Item -LiteralPath $src -Destination $dst -Force
     }
-    foreach ($asset in @("configs", "plugins", "locales", "docs", "compat-profiles", "deploy")) {
+    foreach ($asset in @("configs", "locales", "docs", "compat-profiles", "deploy")) {
       $dest = Join-Path $OutputRoot $asset
       if (Test-Path -LiteralPath $dest) {
         Remove-Item -LiteralPath $dest -Recurse -Force
       }
       Copy-Item -Path ".\$asset" -Destination $OutputRoot -Recurse -Force
     }
+    Copy-ReleasePlugins $OutputRoot
     foreach ($doc in @("README.md", "CHANGELOG.md", "LICENSE", "SECURITY.md", "CONTRIBUTING.md")) {
       if (Test-Path -LiteralPath $doc) {
         Copy-Item -LiteralPath $doc -Destination $OutputRoot -Force

@@ -14,7 +14,7 @@
   "read_timeout": "30s",
   "retry_initial_delay": "100ms",
   "retry_max_delay": "600ms",
-  "server_ws_url": "wss://road.example.com/ws",
+  "server_ws_url": "ws://127.0.0.1:8080/ws",
   "udp_metrics_log_interval": "10s",
   "udp_record": {
     "duration": "30s",

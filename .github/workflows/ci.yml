@@ -47,6 +47,9 @@ jobs:
       - name: Smoke linux amd64 binary
         run: ./build/linux/amd64/road-proxy --version
 
+      - name: Check linux package plugin filter
+        run: test ! -d ./build/linux/amd64/plugins/udp-sync-stress
+
       - name: Build linux arm64
         run: bash ./scripts/build-linux.sh arm64
 
@@ -70,6 +73,13 @@ jobs:
       - name: Smoke windows amd64 binary
         shell: pwsh
         run: ./build/windows/road-proxy.exe --version
+
+      - name: Check windows package plugin filter
+        shell: pwsh
+        run: |
+          if (Test-Path -LiteralPath "./build/windows/plugins/udp-sync-stress") {
+            throw "source-only plugin leaked into windows build output"
+          }
 
       - name: Build windows arm64
         shell: pwsh

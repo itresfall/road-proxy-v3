@@ -154,8 +154,11 @@ Cross build:
 ./scripts/build-cross.ps1
 ```
 
-Build scripts also copy current `configs/`, `plugins/`, `locales/`, `docs/`,
-`compat-profiles/`, and `deploy/` into the output folder.
+Build scripts also copy current `configs/`, release game plugins, `locales/`,
+`docs/`, `compat-profiles/`, and `deploy/` into the output folder. The shipped
+plugin list is controlled by `scripts/release-game-plugins.txt`; source-only
+diagnostic plugins such as `udp-sync-stress` are intentionally excluded from
+user-facing builds.
 
 ## Versioning and Release Packages
 
@@ -191,9 +194,9 @@ road-proxy-v3_<version>_<os>_<arch>.zip
 ```
 
 `scripts/build-cross.ps1 -Package` creates archive and checksum files under
-`build/release/`. Package contents include binaries, `configs/`, `plugins/`,
-`locales/`, `deploy/`, `scripts/`, `README.md`, `CHANGELOG.md`, `LICENSE`,
-`SECURITY.md`, `CONTRIBUTING.md`, and `VERSION.txt`.
+`build/release/`. Package contents include binaries, `configs/`, release game
+plugins, `locales/`, `deploy/`, `scripts/`, `README.md`, `CHANGELOG.md`,
+`LICENSE`, `SECURITY.md`, `CONTRIBUTING.md`, and `VERSION.txt`.
 
 `build/` is local/CI output and should not be committed. Tagged CI runs publish
 the zip and checksum files as GitHub Release assets.
@@ -483,6 +486,7 @@ Reference files:
 ```text
 plugins/gzdoom-udp/plugin.json
 configs/server-gzdoom-linux.json
+configs/client-gzdoom.json
 configs/client-gzdoom-p2.json
 configs/client-gzdoom-p3.json
 ```

@@ -35,6 +35,33 @@ fi
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 OUT_DIR="${REPO_ROOT}/${OUTPUT_ROOT}/${ARCH}"
+RELEASE_PLUGIN_MANIFEST="${REPO_ROOT}/scripts/release-game-plugins.txt"
+
+if [[ ! -f "${RELEASE_PLUGIN_MANIFEST}" ]]; then
+  echo "release plugin manifest missing: ${RELEASE_PLUGIN_MANIFEST}" >&2
+  exit 1
+fi
+
+mapfile -t RELEASE_PLUGINS < <(grep -vE '^[[:space:]]*(#|$)' "${RELEASE_PLUGIN_MANIFEST}" | sed -E 's/^[[:space:]]+|[[:space:]]+$//g')
+if [[ "${#RELEASE_PLUGINS[@]}" -eq 0 ]]; then
+  echo "release plugin manifest is empty: ${RELEASE_PLUGIN_MANIFEST}" >&2
+  exit 1
+fi
+
+copy_release_plugins() {
+  local destination_root="$1"
+  local plugin_dest="${destination_root}/plugins"
+  rm -rf "${plugin_dest}"
+  mkdir -p "${plugin_dest}"
+  for plugin_name in "${RELEASE_PLUGINS[@]}"; do
+    local plugin_src="${REPO_ROOT}/plugins/${plugin_name}"
+    if [[ ! -f "${plugin_src}/plugin.json" ]]; then
+      echo "release plugin missing plugin.json: ${plugin_name}" >&2
+      exit 1
+    fi
+    cp -R "${plugin_src}" "${plugin_dest}/${plugin_name}"
+  done
+}
 
 VERSION="${ROAD_VERSION:-0.1.0-dev}"
 COMMIT="${ROAD_COMMIT:-$(git -C "${REPO_ROOT}" rev-parse --short HEAD 2>/dev/null || true)}"
@@ -63,7 +90,7 @@ build_one "plugin-studio" "./cmd/plugin-studio"
 
 rm -rf "${OUT_DIR}/configs" "${OUT_DIR}/plugins" "${OUT_DIR}/locales" "${OUT_DIR}/docs" "${OUT_DIR}/compat-profiles" "${OUT_DIR}/deploy"
 cp -R "${REPO_ROOT}/configs" "${OUT_DIR}/configs"
-cp -R "${REPO_ROOT}/plugins" "${OUT_DIR}/plugins"
+copy_release_plugins "${OUT_DIR}"
 cp -R "${REPO_ROOT}/locales" "${OUT_DIR}/locales"
 cp -R "${REPO_ROOT}/docs" "${OUT_DIR}/docs"
 cp -R "${REPO_ROOT}/compat-profiles" "${OUT_DIR}/compat-profiles"
@@ -89,7 +116,7 @@ if [[ "${ARCH}" == "amd64" ]]; then
   cp -f "${OUT_DIR}/plugin-studio" "${REPO_ROOT}/${OUTPUT_ROOT}/plugin-studio"
   rm -rf "${REPO_ROOT}/${OUTPUT_ROOT}/configs" "${REPO_ROOT}/${OUTPUT_ROOT}/plugins" "${REPO_ROOT}/${OUTPUT_ROOT}/locales" "${REPO_ROOT}/${OUTPUT_ROOT}/docs" "${REPO_ROOT}/${OUTPUT_ROOT}/compat-profiles" "${REPO_ROOT}/${OUTPUT_ROOT}/deploy"
   cp -R "${OUT_DIR}/configs" "${REPO_ROOT}/${OUTPUT_ROOT}/configs"
-  cp -R "${OUT_DIR}/plugins" "${REPO_ROOT}/${OUTPUT_ROOT}/plugins"
+  copy_release_plugins "${REPO_ROOT}/${OUTPUT_ROOT}"
   cp -R "${OUT_DIR}/locales" "${REPO_ROOT}/${OUTPUT_ROOT}/locales"
   cp -R "${OUT_DIR}/docs" "${REPO_ROOT}/${OUTPUT_ROOT}/docs"
   cp -R "${OUT_DIR}/compat-profiles" "${REPO_ROOT}/${OUTPUT_ROOT}/compat-profiles"

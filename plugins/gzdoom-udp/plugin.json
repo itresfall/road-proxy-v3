@@ -27,8 +27,8 @@
   },
   "description": "Auto-generated profile from Plugin Studio (gzdoom.exe)",
   "menu": {
-    "client_config": "configs/client-udp.example.json",
-    "server_config": "configs/server-udp.example.json"
+    "client_config": "configs/client-gzdoom.json",
+    "server_config": "configs/server-gzdoom-linux.json"
   },
   "name": "gzdoom-udp",
   "protocols": {
