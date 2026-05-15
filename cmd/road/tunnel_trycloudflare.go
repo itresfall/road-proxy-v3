@@ -60,7 +60,7 @@ func startTryCloudflareTunnel(ctx context.Context, bin string, originURL string)
 		return nil, nil, err
 	}
 
-	capture := newTunnelURLCapture(os.Stdout)
+	capture := newTunnelURLCapture(nil)
 	args := []string{
 		"tunnel",
 		"--config", isolatedConfig,
@@ -97,6 +97,7 @@ func waitForTunnelURL(ctx context.Context, urlCh <-chan string, proc *cloudflare
 		select {
 		case url := <-urlCh:
 			fmt.Println()
+			fmt.Printf(msg("cloudflared.tunnel_url_ready"), url)
 			return url, nil
 		case err := <-proc.done:
 			fmt.Println()

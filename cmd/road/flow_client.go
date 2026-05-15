@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"net"
 	"net/url"
 	"os/signal"
 	"strings"
@@ -54,6 +55,8 @@ func startClientFlow(reader *bufio.Reader) error {
 	if err := ensureClientPortAvailable(reader, cfg); err != nil {
 		return err
 	}
+
+	printClientReadyInstructions(cfg)
 
 	tunnel := client.New(cfg, logging.New(cfg.Logging.Format, "road-proxy-client"))
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
@@ -188,4 +191,39 @@ func applyClientProfileFromServer(cfg *config.ClientConfig, requireProfile bool)
 		cfg.ListenNetwork = netw
 	}
 	return nil
+}
+
+func printClientReadyInstructions(cfg *config.ClientConfig) {
+	target, host, port := splitDisplayTarget(cfg.ListenAddr)
+
+	fmt.Println(msg("client.ready"))
+	fmt.Printf(msg("client.game_target_line"), target)
+	if host != "" && port != "" {
+		fmt.Printf(msg("client.game_host_port_line"), host, port)
+	}
+	fmt.Printf(msg("client.remote_line"), cfg.ServerWSURL)
+	if strings.TrimSpace(cfg.PluginName) != "" {
+		fmt.Printf(msg("client.active_plugin_line"), cfg.PluginName)
+	}
+	fmt.Println(msg("client.stop_hint"))
+	fmt.Println()
+	fmt.Println(msg("client.logs_follow"))
+}
+
+func splitDisplayTarget(addr string) (target string, host string, port string) {
+	target = strings.TrimSpace(addr)
+	if target == "" {
+		return "", "", ""
+	}
+
+	host, port, err := net.SplitHostPort(target)
+	if err != nil {
+		return target, "", ""
+	}
+	host = strings.Trim(host, "[]")
+	switch host {
+	case "", "0.0.0.0", "::":
+		host = "127.0.0.1"
+	}
+	return net.JoinHostPort(host, port), host, port
 }

@@ -19,6 +19,9 @@ unless `ROAD_VERSION` is set during build.
   before release.
 - Fixed Plugin Studio output so generated plugin menus point at the generated
   per-plugin server/client config files instead of generic examples.
+- Simplified first-run console output: client mode now shows the exact in-game
+  target address, and TryCloudflare mode hides noisy cloudflared logs while
+  surfacing the created tunnel URL.
 
 ## v0.1.2 - 2026-05-14
 

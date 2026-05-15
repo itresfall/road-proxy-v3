@@ -287,6 +287,20 @@ func TestApplyClientConnectionInputPromptsForPublicAuthToken(t *testing.T) {
 	}
 }
 
+func TestSplitDisplayTargetNormalizesWildcardHost(t *testing.T) {
+	target, host, port := splitDisplayTarget("0.0.0.0:25568")
+	if target != "127.0.0.1:25568" || host != "127.0.0.1" || port != "25568" {
+		t.Fatalf("unexpected display target: target=%q host=%q port=%q", target, host, port)
+	}
+}
+
+func TestSplitDisplayTargetKeepsConcreteHost(t *testing.T) {
+	target, host, port := splitDisplayTarget("192.168.1.50:8303")
+	if target != "192.168.1.50:8303" || host != "192.168.1.50" || port != "8303" {
+		t.Fatalf("unexpected display target: target=%q host=%q port=%q", target, host, port)
+	}
+}
+
 func TestApplyClientConnectionInputBlankPublicAuthKeepsExistingToken(t *testing.T) {
 	cfg := config.DefaultClient()
 	cfg.AuthToken = "existing-token"
@@ -513,6 +527,21 @@ func TestTunnelURLCaptureFindsTryCloudflareURL(t *testing.T) {
 	select {
 	case got := <-capture.found:
 		if got != "https://abc-def.trycloudflare.com" {
+			t.Fatalf("unexpected URL: %s", got)
+		}
+	default:
+		t.Fatal("expected captured URL")
+	}
+}
+
+func TestTunnelURLCaptureWorksWithoutOutputWriter(t *testing.T) {
+	capture := newTunnelURLCapture(nil)
+	if _, err := capture.Write([]byte("INF noisy cloudflared line\nhttps://quiet.trycloudflare.com\n")); err != nil {
+		t.Fatalf("write failed: %v", err)
+	}
+	select {
+	case got := <-capture.found:
+		if got != "https://quiet.trycloudflare.com" {
 			t.Fatalf("unexpected URL: %s", got)
 		}
 	default:

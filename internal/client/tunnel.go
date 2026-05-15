@@ -104,7 +104,7 @@ func (t *Tunnel) startTCP(ctx context.Context) error {
 		return err
 	}
 
-	t.logger.Printf("client tunnel started: local=%s remote=%s", t.cfg.ListenAddr, targetWS)
+	t.logger.Printf("client listener active: game_target=%s road_server=%s plugin=%s network=tcp", t.cfg.ListenAddr, targetWS, t.cfg.PluginName)
 
 	for {
 		localConn, err := listener.Accept()
@@ -142,7 +142,7 @@ func (t *Tunnel) startUDP(ctx context.Context) error {
 		return err
 	}
 
-	t.logger.Printf("client udp tunnel started: local=%s remote=%s", t.cfg.ListenAddr, targetWS)
+	t.logger.Printf("client listener active: game_target=%s road_server=%s plugin=%s network=udp", t.cfg.ListenAddr, targetWS, t.cfg.PluginName)
 
 	sessions := map[string]*udpSession{}
 	var sessionsMu sync.Mutex
