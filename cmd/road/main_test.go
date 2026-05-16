@@ -313,9 +313,9 @@ func TestClientProfileFetchHeadersIncludesAuthToken(t *testing.T) {
 	}
 }
 
-func TestApplyClientConnectionInputPromptsForPublicAuthToken(t *testing.T) {
+func TestApplyClientConnectionInputDoesNotPromptForPublicAuthToken(t *testing.T) {
 	cfg := config.DefaultClient()
-	reader := bufio.NewReader(strings.NewReader("example.trycloudflare.com\nsecret-token\n"))
+	reader := bufio.NewReader(strings.NewReader("example.trycloudflare.com\n"))
 
 	changed, err := applyClientConnectionInput(reader, cfg)
 	if err != nil {
@@ -327,11 +327,8 @@ func TestApplyClientConnectionInputPromptsForPublicAuthToken(t *testing.T) {
 	if cfg.ServerWSURL != "wss://example.trycloudflare.com/ws" {
 		t.Fatalf("server_ws_url = %s", cfg.ServerWSURL)
 	}
-	if cfg.AuthToken != "secret-token" {
+	if cfg.AuthToken != "" {
 		t.Fatalf("auth_token = %q", cfg.AuthToken)
-	}
-	if cfg.AuthHeader != config.DefaultAuthHeaderName {
-		t.Fatalf("auth_header = %q", cfg.AuthHeader)
 	}
 }
 
@@ -353,7 +350,7 @@ func TestApplyClientConnectionInputBlankPublicAuthKeepsExistingToken(t *testing.
 	cfg := config.DefaultClient()
 	cfg.AuthToken = "existing-token"
 	cfg.AuthHeader = "X-Existing-Token"
-	reader := bufio.NewReader(strings.NewReader("road.example.com\n\n"))
+	reader := bufio.NewReader(strings.NewReader("road.example.com\n"))
 
 	changed, err := applyClientConnectionInput(reader, cfg)
 	if err != nil {
@@ -494,6 +491,35 @@ func TestGetServerDefaultPluginProfileReturnsAuthStatus(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "auth token") {
 		t.Fatalf("expected auth-token hint, got %v", err)
+	}
+}
+
+func TestApplyClientProfileFromServerPromptsAuthOnlyAfterUnauthorized(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get(config.DefaultAuthHeaderName) != "secret-token" {
+			http.Error(w, "missing token", http.StatusUnauthorized)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"service":"road-proxy-v3","default_plugin":"ddnet-udp","default_network":"udp"}`))
+	}))
+	defer server.Close()
+
+	cfg := config.DefaultClient()
+	cfg.ServerWSURL = strings.Replace(server.URL, "http://", "ws://", 1) + "/ws"
+	reader := bufio.NewReader(strings.NewReader("secret-token\n"))
+
+	if err := applyClientProfileFromServerWithAuthRetry(reader, cfg, true); err != nil {
+		t.Fatalf("applyClientProfileFromServerWithAuthRetry returned error: %v", err)
+	}
+	if cfg.AuthToken != "secret-token" {
+		t.Fatalf("auth_token = %q", cfg.AuthToken)
+	}
+	if cfg.AuthHeader != config.DefaultAuthHeaderName {
+		t.Fatalf("auth_header = %q", cfg.AuthHeader)
+	}
+	if cfg.PluginName != "ddnet-udp" || cfg.ListenNetwork != "udp" {
+		t.Fatalf("profile not applied: plugin=%q network=%q", cfg.PluginName, cfg.ListenNetwork)
 	}
 }
 

@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"net/url"
 	"os/signal"
 	"strings"
 	"syscall"
@@ -36,7 +35,7 @@ func startClientFlow(reader *bufio.Reader) error {
 		return err
 	}
 	requireProfile := shouldRequireClientProfile(cfg, endpointChanged)
-	if err := applyClientProfileFromServer(cfg, requireProfile); err != nil {
+	if err := applyClientProfileFromServerWithAuthRetry(reader, cfg, requireProfile); err != nil {
 		return err
 	}
 
@@ -139,20 +138,7 @@ func applyClientConnectionInput(reader *bufio.Reader, cfg *config.ClientConfig) 
 	}
 	cfg.ServerWSURL = normalized
 	fmt.Printf(msg("client.endpoint_selected"), normalized)
-	if shouldPromptClientAuthToken(normalized) {
-		if err := promptClientAuthToken(reader, cfg); err != nil {
-			return false, err
-		}
-	}
 	return true, nil
-}
-
-func shouldPromptClientAuthToken(rawURL string) bool {
-	u, err := url.Parse(strings.TrimSpace(rawURL))
-	if err != nil || strings.TrimSpace(u.Host) == "" {
-		return false
-	}
-	return !isLocalHostOrLAN(u.Hostname())
 }
 
 func promptClientAuthToken(reader *bufio.Reader, cfg *config.ClientConfig) error {
@@ -176,9 +162,36 @@ func promptClientAuthToken(reader *bufio.Reader, cfg *config.ClientConfig) error
 	return nil
 }
 
+func applyClientProfileFromServerWithAuthRetry(reader *bufio.Reader, cfg *config.ClientConfig, requireProfile bool) error {
+	err := applyClientProfileFromServer(cfg, requireProfile)
+	if err == nil {
+		return nil
+	}
+	if !isAuthHTTPStatus(err) {
+		return err
+	}
+
+	fmt.Print(msg("client.auth_required"))
+	if promptErr := promptClientAuthToken(reader, cfg); promptErr != nil {
+		return promptErr
+	}
+
+	err = applyClientProfileFromServer(cfg, requireProfile)
+	if err == nil {
+		return nil
+	}
+	if isAuthHTTPStatus(err) {
+		return fmt.Errorf(msg("client.preflight_auth_failed"), err)
+	}
+	return err
+}
+
 func applyClientProfileFromServer(cfg *config.ClientConfig, requireProfile bool) error {
 	profile, err := getServerDefaultPluginProfile(cfg)
 	if err != nil {
+		if requireProfile && isAuthHTTPStatus(err) {
+			return err
+		}
 		if requireProfile {
 			return fmt.Errorf(msg("client.profile_fetch_error"), cfg.ServerWSURL, err)
 		}

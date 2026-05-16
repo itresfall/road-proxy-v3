@@ -653,8 +653,9 @@ This starts an interactive wizard for TryCloudflare, existing tunnel-token mode,
 or `cloudflared tunnel login` + DNS route mode. It generates a local-only ROAD
 server config, a matching client config hint under `configs/.generated/`, and
 prints the public `wss://.../ws` endpoint plus the generated ROAD token.
-Remote players need both values: enter the printed endpoint in ROAD client mode,
-then enter the printed `Auth token` when the client asks for it. If the client
+Remote players need both values for Public Wizard servers: enter the printed
+endpoint in ROAD client mode, then enter the printed `Auth token` if the client
+asks for it. Auth-free ROAD servers do not trigger a token prompt. If the client
 logs HTTP `401` or `403`, the endpoint was reached but the token is missing or
 wrong.
 The wizard asks for local ROAD data/control ports. If the data port is changed,
