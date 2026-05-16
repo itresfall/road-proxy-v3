@@ -132,13 +132,14 @@ Create a diagnostic zip for support/debugging:
 
 ## Build Scripts
 
-Only build scripts are kept under `scripts/`:
+Build helpers and the release plugin manifest are kept under `scripts/`:
 
 ```text
 scripts/build-windows.ps1
 scripts/build-linux.ps1
 scripts/build-linux.sh
 scripts/build-cross.ps1
+scripts/release-game-plugins.txt
 ```
 
 Windows build:
@@ -234,15 +235,21 @@ The GitHub Actions workflow lives at:
 It runs on push, pull request, and manual dispatch:
 
 - `go test ./...`
+- `go vet ./...`
+- `gofmt -l` check for tracked Go files
+- `go run ./cmd/road validate --all-configs`
+- compatibility profile load validation
 - Linux amd64 build smoke with `scripts/build-linux.sh amd64`
 - Linux arm64 cross-build smoke with `scripts/build-linux.sh arm64`
 - Windows amd64 build smoke with `scripts/build-windows.ps1`
 - Windows arm64 cross-build smoke with `scripts/build-windows.ps1 -Arch arm64`
+- package leak checks to keep source-only plugins, studio reports, and internal
+  draft docs out of user-facing build outputs
 
 On Git tags, CI also runs:
 
 ```powershell
-./scripts/build-cross.ps1 -Package
+./scripts/build-cross.ps1 -Package -IncludeWindowsArm64
 ```
 
 and publishes release zip/checksum files as GitHub Release assets. The
@@ -627,6 +634,8 @@ Security knobs:
 - `auth_token`: client-side token sent during WebSocket connect.
 - `auth_header`: header name, defaults to `X-ROAD-Token` when a token is set.
 - `env:NAME`: token values can be read from environment variables; runtime startup fails if the variable is missing or empty.
+- When data-plane auth is enabled, WebSocket traffic and discovery metadata
+  such as `/api/info` require the same token.
 - `configs/server-cloudflare-local.json`: local-only Cloudflare/Nginx preset for `127.0.0.1:8080` and `127.0.0.1:8081`.
 - `allowed_hosts` / `allowed_origins`: optional Host and browser Origin allowlists.
 - `max_connections`, `max_connections_per_ip`, `rate_limit_per_minute`: optional public deployment limits.
