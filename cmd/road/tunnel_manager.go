@@ -260,9 +260,10 @@ func downloadCloudflared(reader *bufio.Reader) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	fmt.Print(msg("cloudflared.checksum_fetching"))
+	checksumProgress := startConsoleProgress(msg("cloudflared.checksum_fetching"))
 	expectedChecksum, checksumErr := fetchCloudflaredChecksum(binaryName)
 	if checksumErr != nil {
+		checksumProgress.Stop(msg("cloudflared.failed"))
 		fmt.Printf(msg("cloudflared.checksum_fetch_failed"), checksumErr)
 		cont, promptErr := askYesNo(reader, msg("cloudflared.checksum_continue_prompt"), false)
 		if promptErr != nil {
@@ -272,17 +273,20 @@ func downloadCloudflared(reader *bufio.Reader) (string, error) {
 			return "", fmt.Errorf(msg("cloudflared.checksum_required"))
 		}
 	} else {
-		fmt.Printf(msg("cloudflared.checksum_fetch_ok"), expectedChecksum[:16])
+		checksumProgress.Stop(fmt.Sprintf(msg("cloudflared.checksum_fetch_ok"), expectedChecksum[:16]))
 	}
 
 	fmt.Printf(msg("cloudflared.downloading"), url)
 	client := &http.Client{Timeout: 3 * time.Minute}
+	downloadProgress := startConsoleProgress(msg("cloudflared.download_progress"))
 	resp, err := client.Get(url)
 	if err != nil {
+		downloadProgress.Stop(msg("cloudflared.failed"))
 		return "", err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		downloadProgress.Stop(msg("cloudflared.failed"))
 		return "", fmt.Errorf("download failed: HTTP %d", resp.StatusCode)
 	}
 
@@ -294,13 +298,16 @@ func downloadCloudflared(reader *bufio.Reader) (string, error) {
 	_, copyErr := io.Copy(file, resp.Body)
 	closeErr := file.Close()
 	if copyErr != nil {
+		downloadProgress.Stop(msg("cloudflared.failed"))
 		_ = os.Remove(tmp)
 		return "", copyErr
 	}
 	if closeErr != nil {
+		downloadProgress.Stop(msg("cloudflared.failed"))
 		_ = os.Remove(tmp)
 		return "", closeErr
 	}
+	downloadProgress.Stop(msg("cloudflared.ok"))
 	if runtime.GOOS != "windows" {
 		_ = os.Chmod(tmp, 0o755)
 	}
@@ -322,6 +329,43 @@ func downloadCloudflared(reader *bufio.Reader) (string, error) {
 	}
 	fmt.Printf(msg("cloudflared.ready"), dest)
 	return dest, nil
+}
+
+type consoleProgress struct {
+	done chan struct{}
+	once sync.Once
+}
+
+func startConsoleProgress(label string) *consoleProgress {
+	p := &consoleProgress{done: make(chan struct{})}
+	fmt.Print(label)
+	go func() {
+		ticker := time.NewTicker(time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				fmt.Print(".")
+			case <-p.done:
+				return
+			}
+		}
+	}()
+	return p
+}
+
+func (p *consoleProgress) Stop(suffix string) {
+	if p == nil {
+		return
+	}
+	p.once.Do(func() {
+		close(p.done)
+		if strings.TrimSpace(suffix) == "" {
+			fmt.Println()
+			return
+		}
+		fmt.Printf(" %s\n", strings.TrimSpace(suffix))
+	})
 }
 
 func startCloudflaredProcess(ctx context.Context, bin string, args []string, writer io.Writer) (*cloudflaredProcess, error) {
