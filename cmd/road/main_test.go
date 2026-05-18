@@ -266,6 +266,56 @@ func TestApplyClientProfileFromServerRejectsExplicitBadEndpoint(t *testing.T) {
 	}
 }
 
+func TestApplyClientProfileFromServerRejectsNonRoadDomainEvenWithPluginLikeJSON(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/info":
+			http.NotFound(w, r)
+		case "/api/plugins":
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"default":{"name":"minecraft","target_network":"tcp"}}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	cfg := config.DefaultClient()
+	cfg.ServerWSURL = strings.Replace(server.URL, "http://", "ws://", 1) + "/ws"
+	cfg.PluginName = "minecraft"
+
+	err := applyClientProfileFromServer(cfg, true)
+	if err == nil {
+		t.Fatal("expected non-ROAD endpoint to be rejected before plugin fallback")
+	}
+	if cfg.PluginName != "minecraft" {
+		t.Fatalf("plugin should not be changed on non-ROAD endpoint, got %q", cfg.PluginName)
+	}
+}
+
+func TestApplyClientProfileFromServerRejectsHTMLInfoEvenWithHealthFallback(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/info":
+			w.Header().Set("Content-Type", "text/html")
+			_, _ = w.Write([]byte(`<html>not road</html>`))
+		case "/api/health":
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"default_plugin":{"name":"minecraft","target_network":"tcp"}}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	cfg := config.DefaultClient()
+	cfg.ServerWSURL = strings.Replace(server.URL, "http://", "ws://", 1) + "/ws"
+
+	if err := applyClientProfileFromServer(cfg, true); err == nil {
+		t.Fatal("expected HTML /api/info response to reject endpoint")
+	}
+}
+
 func TestShouldRequireClientProfileForPublicSavedEndpoint(t *testing.T) {
 	cfg := config.DefaultClient()
 	cfg.ServerWSURL = "wss://road.example.com/ws"

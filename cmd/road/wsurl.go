@@ -76,17 +76,18 @@ type serverPluginProfile struct {
 
 const expectedServerServiceName = "road-proxy-v3"
 
+type roadServerInfo struct {
+	Service        string `json:"service"`
+	DefaultPlugin  string `json:"default_plugin"`
+	DefaultNetwork string `json:"default_network"`
+}
+
 func getServerDefaultPluginProfile(cfg *config.ClientConfig) (serverPluginProfile, error) {
 	base, err := apiBaseFromWSURL(cfg.ServerWSURL)
 	if err != nil {
 		return serverPluginProfile{}, err
 	}
 
-	type infoResp struct {
-		Service        string `json:"service"`
-		DefaultPlugin  string `json:"default_plugin"`
-		DefaultNetwork string `json:"default_network"`
-	}
 	type pluginsResp struct {
 		Default struct {
 			Name          string `json:"name"`
@@ -103,19 +104,15 @@ func getServerDefaultPluginProfile(cfg *config.ClientConfig) (serverPluginProfil
 	httpClient := &http.Client{Timeout: 6 * time.Second}
 	headers := clientProfileFetchHeaders(cfg)
 
-	var info infoResp
-	if err := fetchJSON(httpClient, base+"/api/info", headers, &info); err == nil {
-		if err := validateServerServiceName(info.Service); err != nil {
-			return serverPluginProfile{}, err
-		}
-		if strings.TrimSpace(info.DefaultPlugin) != "" {
-			return serverPluginProfile{
-				Name:          info.DefaultPlugin,
-				TargetNetwork: info.DefaultNetwork,
-			}, nil
-		}
-	} else if isAuthHTTPStatus(err) {
+	info, err := fetchRoadServerInfo(httpClient, base, headers)
+	if err != nil {
 		return serverPluginProfile{}, err
+	}
+	if strings.TrimSpace(info.DefaultPlugin) != "" {
+		return serverPluginProfile{
+			Name:          info.DefaultPlugin,
+			TargetNetwork: info.DefaultNetwork,
+		}, nil
 	}
 
 	var p pluginsResp
@@ -168,20 +165,26 @@ func preflightClientCheck(cfg *config.ClientConfig, required bool) error {
 		return err
 	}
 
-	type infoResp struct {
-		Service string `json:"service"`
-	}
-
 	httpClient := &http.Client{Timeout: 6 * time.Second}
 	headers := clientProfileFetchHeaders(cfg)
-	var info infoResp
-	if err := fetchJSON(httpClient, base+"/api/info", headers, &info); err != nil {
+	if _, err := fetchRoadServerInfo(httpClient, base, headers); err != nil {
 		if isAuthHTTPStatus(err) {
 			return fmt.Errorf(msg("client.preflight_auth_failed"), err)
 		}
 		return fmt.Errorf(msg("client.preflight_failed"), err)
 	}
-	return validateServerServiceName(info.Service)
+	return nil
+}
+
+func fetchRoadServerInfo(httpClient *http.Client, base string, headers http.Header) (roadServerInfo, error) {
+	var info roadServerInfo
+	if err := fetchJSON(httpClient, base+"/api/info", headers, &info); err != nil {
+		return roadServerInfo{}, err
+	}
+	if err := validateServerServiceName(info.Service); err != nil {
+		return roadServerInfo{}, err
+	}
+	return info, nil
 }
 
 func validateServerServiceName(service string) error {
