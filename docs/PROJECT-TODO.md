@@ -120,6 +120,15 @@ Bu liste mevcut kod, dokumanlar, test durumu ve son GZDoom/Lethal Company deneyl
 - DDNet UDP profili eklendi: `ddnet-udp`, `configs/server-ddnet.json`, `configs/client-ddnet.json`; Lethal yerine temiz UDP oyun baseline'i olarak kullanilacak.
 - Her calisan oyun icin acceptance doc eklendi: Minecraft Java, Minecraft Bedrock, GZDoom UDP, Lethal Company direct UDP, DDNet UDP.
 - Lethal Company 3 kisi sonucu release engeli degil; profil community-validation olarak kalacak ve kullanici loglariyla olgunlasacak.
+- SOTF dedicated server tanilamasi `scripts/sotf-port-capture.ps1` ile baslatildi; testte server tarafinda UDP `8766`, `9700`, `27016`, ayrica Steam/dinamik gorunen `51755`, `53385` socketleri goruldu.
+- SOTF icin karar: plugin varsayilanina `51755/53385` eklenmeyecek; ilk destek `8766/game`, `9700/blob-sync`, `27016/query` uzerinden multi-port UDP olarak tasarlanacak.
+- Multi-port UDP MVP plani:
+  1. Plugin schema geriye uyumlu kalacak; mevcut `target` zorunlu/varsayilan hedef olarak devam edecek.
+  2. Yeni `targets[]` alaninda `id`, `network`, `address`, `role`, `notes` tutulacak.
+  3. ROAD server WebSocket query icinde `target=<id>` gelirse o hedefe proxy edecek; gelmezse legacy `target` kullanilacak.
+  4. ROAD client config icinde UDP icin `udp_listeners[]` eklenecek; her listener kendi `listen_addr` ve `target` id degeriyle ayni server pluginine baglanacak.
+  5. WebSocket payload formatini degistirmeden hedef secimi baglanti seviyesinde yapilacak; bu eski client/server uyumlulugunu korur.
+  6. SOTF profili ve configleri bu modelin ilk gercek oyun ornegi olacak.
 
 ## P1 - Plugin Studio
 
@@ -154,6 +163,11 @@ Bu liste mevcut kod, dokumanlar, test durumu ve son GZDoom/Lethal Company deneyl
 - Unknown game report JSON uretildi; exe hash ve Steam AppID bulunabiliyorsa rapora ekleniyor.
 - Packet fingerprint ilk etapta payload okumadan metadata ile eklendi: socket snapshot kaynagindan flow direction, tick frequency, burst/streak ve TCP handshake tahmini yaziliyor.
 - Packet size current scanner ile olculemedigi icin `packet_size_observed=false` ve `packet_size_source=unavailable_without_packet_capture` olarak rapora acik yaziliyor.
+- Plugin Studio yeni "soft capture" mantigina tasinacak: admin/capture tool varsa gelismis paket yakalama kullanilacak, yoksa mevcut netstat/ss/CIM scanner bozulmadan calismaya devam edecek.
+- Windows `pktmon` entegrasyonu Plugin Studio icine opsiyonel gelismis yakalama katmani olarak eklenecek. Hedef: gercek paket boyutu, yon, timing, burst ve MTU dagilimini report/fingerprint icine almak.
+- Linux tarafinda ayni katman `tcpdump`/`tshark` veya dogrudan pcap okuma ile tasarlanacak. Bu sayede Windows/Linux Plugin Studio ayni fingerprint modelini besleyebilecek.
+- Paket yakalama katmani su kararlari iyilestirmeli: coklu sabit UDP port ayrimi, gercek paket/saniye, buyuk datagram riski, konservatif 1200 byte WAN MTU esigine yaklasan oyunlar, RakNet/ENet benzeri ilk-byte imzalari ve deneysel payload-ici-IP arama.
+- Paket yakalama opsiyonel kalacak; admin izni, `pktmon`, `tcpdump` veya `tshark` yoksa Studio hata verip durmayacak, "advanced capture unavailable" diyerek mevcut scanner ile plugin taslagi uretmeyi surdurecek.
 - Topology heuristic eklendi: `server_or_host`, `client_to_server`, `peer_to_peer_candidate`, `mixed_or_unclear`, `unknown`.
 - Raw payload/network library byte fingerprint opsiyonel spike olarak ayrildi: `docs/PLUGIN-STUDIO-PAYLOAD-FINGERPRINT-SPIKE.md`.
 - Capture replay sistemi taslagi yazildi: `docs/PLUGIN-STUDIO-CAPTURE-REPLAY-DRAFT.md`.

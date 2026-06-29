@@ -148,6 +148,12 @@ Bu dosya `PROJECT-TODO.md` icindeki daginik maddeleri is sirasina sokan ana yol 
 {x} Lethal Company 3 kisi sonucunu release engeli olmaktan cikar; community-validation profili olarak dokumante et.
 {x} DDNet UDP profilini ekle ve Lethal yerine temiz UDP oyun baseline'i olarak dokumante et.
 {x} Her calisan oyun icin acceptance dokumani ekle.
+{x} Multi-port UDP oyunlar icin geriye uyumlu plugin `targets[]` modelini ekle.
+{x} ROAD client icin tek process icinde birden fazla UDP local listener calistirma destegi ekle.
+{x} WebSocket data-plane icinde `target=<id>` ile UDP hedef secimini ekle; eski tek target akisini bozma.
+{x} Sons of the Forest Dedicated Server profili ekle: `8766/game`, `9700/blob-sync`, `27016/query`.
+{ } Plugin Studio coklu sabit UDP server portu gorurse tek target yerine multi-port profil onersin.
+{x} Multi-port UDP icin e2e test ekle: iki farkli local UDP portu iki farkli server target'a gitmeli.
 
 ## Faz 8 - Gozlemleme ve Debug
 
@@ -238,6 +244,18 @@ Bu dosya `PROJECT-TODO.md` icindeki daginik maddeleri is sirasina sokan ana yol 
 {x} Domain saglayici nameserver tasima isinin ROAD kapsami disinda kalacagina karar ver.
 {x} Domaini Cloudflare nameserverlarina baglama rehberini yaz.
 { } Cloudflare API ile tam otomatik zone/domain secimini sadece gercek ihtiyac dogarsa tekrar degerlendir.
+
+## Faz 14 - Plugin Studio Gelismis Paket Yakalama
+
+{ } Plugin Studio'yu yeni soft capture mantigina tasarla: admin/capture araci varsa gelismis yakalama, yoksa mevcut netstat/ss/CIM akisina sessiz fallback.
+{ } Windows: `pktmon` entegrasyonu ekle; baslat/durdur/formatla/parse et akisini Plugin Studio report modeline bagla.
+{ } Linux: `tcpdump`/`tshark` entegrasyonunu veya dogrudan pcap okuma katmanini tasarla.
+{ } Paket boyutu istatistiklerini fingerprint modeline ekle: min/avg/p95/max, >1200, >1400, >1472 sayaclari.
+{ } Paket yonu, timing, burst ve paket/saniye sinyallerini coklu port secim kararinda kullan.
+{ } Ilk byte analizi ile RakNet/ENet/SLikeNet benzeri UDP kutuphane imzalarini opsiyonel sinyal olarak ekle.
+{ } Payload-ici-IP/port aramasini sadece deneysel spike olarak ekle; varsayilan otomatik rewrite karari verme.
+{ } Studio UI/CLI icine "gelismis yakalama" modu ekle ve admin izni/tool eksikligini okunur uyariyla goster.
+{ } SOTF'ta elle yaptigimiz coklu UDP port tespitini Studio'nun otomatik profil oneri akisi haline getir.
 
 ## Kabul Kurali
 
