@@ -20,7 +20,7 @@ Check the active configs manually:
 
 ## 2. Start Order
 
-1. Start Bedrock server on plugin target address (default `192.168.1.101:19132`).
+1. Start Bedrock server on the configured plugin target address (for example `127.0.0.1:19132`).
 2. Start proxy server:
    ```bash
    go run ./cmd/server -config configs/server-udp.example.json

@@ -19,7 +19,7 @@ Bu liste mevcut kod, dokumanlar, test durumu ve son GZDoom/Lethal Company deneyl
 - Pakete `configs`, `plugins`, `scripts`, binaryler, README, CHANGELOG ve `VERSION.txt` giriyor.
 - Paketleme basinda eski `road-proxy-v3_*.zip` ve `.sha256` assetleri temizleniyor.
 - Binary versiyon bilgisi eklendi: `--version`, build tarihi, commit/hash ve manuel `ROAD_VERSION`.
-- Versiyonlama stratejisi SemVer olarak belirlendi; gelistirme build varsayilani `0.1.0-dev`.
+- Versiyonlama stratejisi SemVer olarak belirlendi; gelistirme build varsayilani `0.2.0-dev`.
 - `CHANGELOG.md` eklendi ve release notlari buradan takip edilecek.
 - `SECURITY.md`, `CONTRIBUTING.md` ve `docs/RELEASE-CHECKLIST.md` eklendi.
 - README icine minimum Go surumu yazildi: Go 1.23+.
@@ -120,8 +120,8 @@ Bu liste mevcut kod, dokumanlar, test durumu ve son GZDoom/Lethal Company deneyl
 - DDNet UDP profili eklendi: `ddnet-udp`, `configs/server-ddnet.json`, `configs/client-ddnet.json`; Lethal yerine temiz UDP oyun baseline'i olarak kullanilacak.
 - Her calisan oyun icin acceptance doc eklendi: Minecraft Java, Minecraft Bedrock, GZDoom UDP, Lethal Company direct UDP, DDNet UDP.
 - Lethal Company 3 kisi sonucu release engeli degil; profil community-validation olarak kalacak ve kullanici loglariyla olgunlasacak.
-- SOTF dedicated server tanilamasi `scripts/sotf-port-capture.ps1` ile baslatildi; testte server tarafinda UDP `8766`, `9700`, `27016`, ayrica Steam/dinamik gorunen `51755`, `53385` socketleri goruldu.
-- SOTF icin karar: plugin varsayilanina `51755/53385` eklenmeyecek; ilk destek `8766/game`, `9700/blob-sync`, `27016/query` uzerinden multi-port UDP olarak tasarlanacak.
+- SOTF dedicated server tanilamasi `scripts/sotf-port-capture.ps1` ile baslatildi; sabit game/blob-sync/query listenerlari ile dinamik Steam-tarafi socketler ayrildi.
+- SOTF icin karar: dinamik Steam-side portlar plugin varsayilanina eklenmeyecek; destek `8766/game`, `9700/blob-sync`, `27016/query` uzerinden multi-port UDP olarak tasarlanacak.
 - Multi-port UDP MVP plani:
   1. Plugin schema geriye uyumlu kalacak; mevcut `target` zorunlu/varsayilan hedef olarak devam edecek.
   2. Yeni `targets[]` alaninda `id`, `network`, `address`, `role`, `notes` tutulacak.
@@ -164,7 +164,8 @@ Bu liste mevcut kod, dokumanlar, test durumu ve son GZDoom/Lethal Company deneyl
 - Packet fingerprint ilk etapta payload okumadan metadata ile eklendi: socket snapshot kaynagindan flow direction, tick frequency, burst/streak ve TCP handshake tahmini yaziliyor.
 - Packet size current scanner ile olculemedigi icin `packet_size_observed=false` ve `packet_size_source=unavailable_without_packet_capture` olarak rapora acik yaziliyor.
 - Plugin Studio yeni "soft capture" mantigina tasinacak: admin/capture tool varsa gelismis paket yakalama kullanilacak, yoksa mevcut netstat/ss/CIM scanner bozulmadan calismaya devam edecek.
-- Windows `pktmon` entegrasyonu Plugin Studio icine opsiyonel gelismis yakalama katmani olarak eklenecek. Hedef: gercek paket boyutu, yon, timing, burst ve MTU dagilimini report/fingerprint icine almak.
+- Windows `pktmon` entegrasyonu Plugin Studio icine opsiyonel gelismis yakalama katmani olarak eklendi. `auto` modu izin/tool yoksa socket scanner'a sessiz fallback yapar; `required` modu ise bunu hata sayar.
+- Report/fingerprint artik gercek paket boyutu, timing, paket/saniye, port aktivitesi, MTU dagilimi ve RakNet/SLikeNet offline-magic sinyallerini Windows capture varsa alabilir. Ham yakalama dosyalari gecici dizinde parse sonrasi silinir.
 - Linux tarafinda ayni katman `tcpdump`/`tshark` veya dogrudan pcap okuma ile tasarlanacak. Bu sayede Windows/Linux Plugin Studio ayni fingerprint modelini besleyebilecek.
 - Paket yakalama katmani su kararlari iyilestirmeli: coklu sabit UDP port ayrimi, gercek paket/saniye, buyuk datagram riski, konservatif 1200 byte WAN MTU esigine yaklasan oyunlar, RakNet/ENet benzeri ilk-byte imzalari ve deneysel payload-ici-IP arama.
 - Paket yakalama opsiyonel kalacak; admin izni, `pktmon`, `tcpdump` veya `tshark` yoksa Studio hata verip durmayacak, "advanced capture unavailable" diyerek mevcut scanner ile plugin taslagi uretmeyi surdurecek.

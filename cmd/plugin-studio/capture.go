@@ -93,6 +93,10 @@ func discoverCandidates() ([]processCandidate, error) {
 }
 
 func captureProcess(pid int, processName string, duration, interval time.Duration) (*captureSummary, error) {
+	return captureProcessWithOptions(pid, processName, duration, interval, captureOptions{AdvancedCapture: advancedCaptureOff})
+}
+
+func captureProcessWithOptions(pid int, processName string, duration, interval time.Duration, options captureOptions) (*captureSummary, error) {
 	if duration <= 0 {
 		duration = 10 * time.Second
 	}
@@ -102,6 +106,21 @@ func captureProcess(pid int, processName string, duration, interval time.Duratio
 
 	summary := newCaptureSummary(pid, processName, int(duration/time.Second))
 	fingerprint := newPacketFingerprintBuilder()
+	session, captureReport, err := startAdvancedCapture(options.AdvancedCapture)
+	if captureReport != nil {
+		summary.AdvancedCapture = captureReport
+	}
+	if err != nil {
+		return nil, err
+	}
+	finishedCapture := false
+	if session != nil {
+		defer func() {
+			if !finishedCapture {
+				session.Abort()
+			}
+		}()
+	}
 
 	deadline := time.Now().Add(duration)
 	for time.Now().Before(deadline) {
@@ -138,6 +157,18 @@ func captureProcess(pid int, processName string, duration, interval time.Duratio
 	summary.RecommendedNet, summary.RecommendedPort = recommendNetworkAndPort(summary)
 	summary.PacketFingerprint = fingerprint.report(summary.Ticks)
 	summary.Topology = inferTopology(summary)
+	if session != nil {
+		report, packets, captureErr := session.Finish(summary)
+		finishedCapture = true
+		if captureErr != nil {
+			summary.AdvancedCapture = report
+			if normalizedCaptureMode(options.AdvancedCapture) == advancedCaptureRequired {
+				return nil, captureErr
+			}
+		} else {
+			applyCapturedPacketData(summary, report, packets)
+		}
+	}
 	return summary, nil
 }
 
@@ -167,6 +198,10 @@ func newCaptureSummary(pid int, processName string, captureSeconds int) *capture
 }
 
 func captureProcessPhases(pid int, processName string, phaseSeconds int, interval time.Duration, beforePhase func(capturePhase) error) (*captureSummary, error) {
+	return captureProcessPhasesWithOptions(pid, processName, phaseSeconds, interval, beforePhase, captureOptions{AdvancedCapture: advancedCaptureOff})
+}
+
+func captureProcessPhasesWithOptions(pid int, processName string, phaseSeconds int, interval time.Duration, beforePhase func(capturePhase) error, options captureOptions) (*captureSummary, error) {
 	if phaseSeconds < 5 {
 		phaseSeconds = 5
 	}
@@ -178,7 +213,7 @@ func captureProcessPhases(pid int, processName string, phaseSeconds int, interva
 				return nil, err
 			}
 		}
-		summary, err := captureProcess(pid, processName, time.Duration(phaseSeconds)*time.Second, interval)
+		summary, err := captureProcessWithOptions(pid, processName, time.Duration(phaseSeconds)*time.Second, interval, options)
 		if err != nil {
 			return nil, err
 		}
@@ -210,6 +245,7 @@ func buildCapturePhaseSummary(name string, summary *captureSummary) capturePhase
 		RecommendedNet:    summary.RecommendedNet,
 		RecommendedPort:   summary.RecommendedPort,
 		PacketFingerprint: summary.PacketFingerprint,
+		AdvancedCapture:   summary.AdvancedCapture,
 	}
 }
 
@@ -230,6 +266,7 @@ func aggregatePhaseSummaries(pid int, processName string, phases []capturePhaseS
 	summary.TopRemotePorts["udp"] = topPorts(summary.RemotePortHits["udp"], 8)
 	summary.RecommendedNet, summary.RecommendedPort = recommendNetworkAndPort(summary)
 	summary.PacketFingerprint = aggregatePhasePacketFingerprints(phases)
+	summary.AdvancedCapture = aggregatePhaseAdvancedCaptures(phases)
 	summary.Topology = inferTopology(summary)
 	return summary
 }

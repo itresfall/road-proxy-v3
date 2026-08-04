@@ -30,6 +30,7 @@ const (
 type ClientConfig struct {
 	ListenAddr        string            `json:"listen_addr"`
 	ListenNetwork     string            `json:"listen_network"`
+	UDPListeners      []UDPListener     `json:"udp_listeners,omitempty"`
 	ServerWSURL       string            `json:"server_ws_url"`
 	PluginName        string            `json:"plugin_name"`
 	AuthToken         string            `json:"auth_token"`
@@ -50,6 +51,11 @@ type ClientConfig struct {
 	Headers           map[string]string `json:"headers"`
 	Logging           LoggingConfig     `json:"logging"`
 	UDPRecord         UDPRecordConfig   `json:"udp_record"`
+}
+
+type UDPListener struct {
+	ListenAddr string `json:"listen_addr"`
+	Target     string `json:"target,omitempty"`
 }
 
 type ClientNormalizeOptions struct {
@@ -194,6 +200,12 @@ func (c *ClientConfig) NormalizeWithOptions(options ClientNormalizeOptions) erro
 	default:
 		return fmt.Errorf("invalid client.listen_network: must be tcp or udp")
 	}
+	if len(c.UDPListeners) > 0 && c.ListenNetwork != "udp" {
+		return fmt.Errorf("invalid client.udp_listeners: only valid when listen_network is udp")
+	}
+	if err := normalizeUDPListeners(c.UDPListeners); err != nil {
+		return err
+	}
 
 	if _, err := parseDurationOrDefault(c.HandshakeTimeout, defaultClientHandshakeTime); err != nil {
 		return fmt.Errorf("invalid client.handshake_timeout: %w", err)
@@ -227,6 +239,23 @@ func (c *ClientConfig) NormalizeWithOptions(options ClientNormalizeOptions) erro
 		return fmt.Errorf("invalid client.write_timeout: %w", err)
 	}
 
+	return nil
+}
+
+func normalizeUDPListeners(listeners []UDPListener) error {
+	seen := map[string]struct{}{}
+	for i := range listeners {
+		listeners[i].ListenAddr = strings.TrimSpace(listeners[i].ListenAddr)
+		listeners[i].Target = strings.TrimSpace(listeners[i].Target)
+		if listeners[i].ListenAddr == "" {
+			return fmt.Errorf("invalid client.udp_listeners[%d].listen_addr: cannot be empty", i)
+		}
+		key := strings.ToLower(listeners[i].ListenAddr)
+		if _, ok := seen[key]; ok {
+			return fmt.Errorf("invalid client.udp_listeners[%d].listen_addr: duplicate %q", i, listeners[i].ListenAddr)
+		}
+		seen[key] = struct{}{}
+	}
 	return nil
 }
 

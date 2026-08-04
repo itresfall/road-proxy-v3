@@ -33,16 +33,18 @@ func runNonInteractiveStudio(layout app.RuntimeLayout, opts studioCLIOptions) er
 	if phaseSeconds < 5 {
 		phaseSeconds = 5
 	}
+	options := captureOptions{AdvancedCapture: opts.AdvancedCapture}
 	var summary *captureSummary
 	if opts.MultiPhase {
-		summary, err = captureProcessPhases(selected.PID, selected.Name, phaseSeconds, time.Second, nil)
+		summary, err = captureProcessPhasesWithOptions(selected.PID, selected.Name, phaseSeconds, time.Second, nil, options)
 	} else {
-		summary, err = captureProcess(selected.PID, selected.Name, time.Duration(seconds)*time.Second, time.Second)
+		summary, err = captureProcessWithOptions(selected.PID, selected.Name, time.Duration(seconds)*time.Second, time.Second, options)
 	}
 	if err != nil {
 		return fmt.Errorf("capture failed: %w", err)
 	}
 	enrichCaptureWithProcessSignals(summary, selected)
+	printAdvancedCaptureStatus(summary.AdvancedCapture)
 
 	network := summary.RecommendedNet
 	if network == "" {

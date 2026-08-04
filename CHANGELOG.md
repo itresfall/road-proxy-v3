@@ -2,8 +2,21 @@
 
 All notable release-facing changes should be recorded in this file.
 
-This project uses SemVer for tagged releases. Development builds use `0.1.0-dev`
+This project uses SemVer for tagged releases. Development builds use `0.2.0-dev`
 unless `ROAD_VERSION` is set during build.
+
+## v0.2.0 - 2026-08-05
+
+- Added named multi-port UDP targets and matching client listeners while
+  preserving legacy single-target plugin compatibility.
+- Added the field-tested Sons Of The Forest dedicated-server profile for UDP
+  ports `8766`, `9700`, and `27016`, plus a public acceptance document.
+- Added optional Windows `pktmon` packet metadata capture to Plugin Studio.
+  It falls back to socket snapshots when unavailable and deletes raw temporary
+  captures after producing aggregate size, timing, port, and RakNet signals.
+- Hardened publication hygiene: packet captures and local environment files are
+  ignored, raw local test logs are not source artifacts, and incomplete draft
+  profiles were removed from release inputs.
 
 ## v0.1.0 - 2026-05-15
 

@@ -175,6 +175,8 @@ func buildPortSelectionReport(summary *captureSummary, selectedNetwork string, s
 	reason := "capture_recommendation"
 	if match.Profile != nil && match.Profile.TargetPort == selectedPort && match.Profile.Network == selectedNetwork {
 		reason = "compat_profile_target"
+	} else if selectedPortHasAdvancedCapture(summary, selectedNetwork, selectedPort) {
+		reason = "advanced_packet_capture"
 	}
 
 	report := &portSelectionReport{
@@ -184,6 +186,18 @@ func buildPortSelectionReport(summary *captureSummary, selectedNetwork string, s
 		Rejected:        rejectedPortCandidates(summary, selectedNetwork, selectedPort),
 	}
 	return report
+}
+
+func selectedPortHasAdvancedCapture(summary *captureSummary, network string, port int) bool {
+	if summary == nil || summary.PacketFingerprint == nil || !summary.PacketFingerprint.PacketSizeObserved {
+		return false
+	}
+	for _, candidate := range summary.PacketFingerprint.CapturedPorts {
+		if candidate.Network == network && candidate.Port == port && candidate.Packets > 0 {
+			return true
+		}
+	}
+	return false
 }
 
 func rejectedPortCandidates(summary *captureSummary, selectedNetwork string, selectedPort int) []portCandidateReport {

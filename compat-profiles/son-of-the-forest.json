@@ -1,0 +1,57 @@
+{
+  "schema_version": "compat_profile.v1",
+  "id": "son-of-the-forest",
+  "display_name": "Sons Of The Forest dedicated server UDP",
+  "road_scope": "direct_lan_local_port_only",
+  "steam_lobby_supported": false,
+  "requires_game_launch_args": false,
+  "match": [
+    "sons of the forest",
+    "sonsoftheforest"
+  ],
+  "exe_names": [
+    "SonsOfTheForestDS.exe",
+    "SonsOfTheForest.exe"
+  ],
+  "steam_app_ids": [
+    1326470,
+    2465200
+  ],
+  "exe_hashes": {},
+  "plugin_name": "son-of-the-forest-udp",
+  "network": "udp",
+  "target_host": "127.0.0.1",
+  "target_port": 8766,
+  "client_listen_port": 8766,
+  "udp_peer_broadcast": false,
+  "udp_reply_policy": "same_ip",
+  "known_ports": [
+    {
+      "network": "udp",
+      "port": 8766,
+      "role": "game",
+      "notes": "Observed fixed dedicated server UDP listener."
+    },
+    {
+      "network": "udp",
+      "port": 9700,
+      "role": "blob-sync",
+      "notes": "Observed fixed dedicated server UDP listener."
+    },
+    {
+      "network": "udp",
+      "port": 27016,
+      "role": "query",
+      "notes": "Observed fixed dedicated server UDP query/broadcast port."
+    }
+  ],
+  "note_keys": [
+    "studio.profile.sotf.note.direct",
+    "studio.profile.sotf.note.multi_port",
+    "studio.profile.sotf.note.dynamic_ports"
+  ],
+  "launch_advice_keys": [
+    "studio.profile.sotf.launch.server",
+    "studio.profile.sotf.launch.client"
+  ]
+}

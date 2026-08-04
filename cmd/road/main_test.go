@@ -257,7 +257,7 @@ func TestApplyClientProfileFromServerRejectsExplicitBadEndpoint(t *testing.T) {
 	cfg.ServerWSURL = strings.Replace(server.URL, "http://", "ws://", 1) + "/ws"
 	cfg.PluginName = "minecraft"
 
-	err := applyClientProfileFromServer(cfg, true)
+	_, _, err := applyClientProfileFromServer(cfg, true)
 	if err == nil {
 		t.Fatal("expected explicit endpoint profile fetch failure")
 	}
@@ -284,7 +284,7 @@ func TestApplyClientProfileFromServerRejectsNonRoadDomainEvenWithPluginLikeJSON(
 	cfg.ServerWSURL = strings.Replace(server.URL, "http://", "ws://", 1) + "/ws"
 	cfg.PluginName = "minecraft"
 
-	err := applyClientProfileFromServer(cfg, true)
+	_, _, err := applyClientProfileFromServer(cfg, true)
 	if err == nil {
 		t.Fatal("expected non-ROAD endpoint to be rejected before plugin fallback")
 	}
@@ -311,8 +311,68 @@ func TestApplyClientProfileFromServerRejectsHTMLInfoEvenWithHealthFallback(t *te
 	cfg := config.DefaultClient()
 	cfg.ServerWSURL = strings.Replace(server.URL, "http://", "ws://", 1) + "/ws"
 
-	if err := applyClientProfileFromServer(cfg, true); err == nil {
+	if _, _, err := applyClientProfileFromServer(cfg, true); err == nil {
 		t.Fatal("expected HTML /api/info response to reject endpoint")
+	}
+}
+
+func TestApplyLocalClientTemplateForProfileCopiesUDPListeners(t *testing.T) {
+	root := t.TempDir()
+	layout := app.RuntimeLayout{
+		Root:      root,
+		ConfigDir: filepath.Join(root, "configs"),
+		PluginDir: filepath.Join(root, "plugins"),
+	}
+	if err := os.MkdirAll(filepath.Join(layout.PluginDir, "son-of-the-forest-udp"), 0o755); err != nil {
+		t.Fatalf("mkdir plugin dir: %v", err)
+	}
+	if err := os.MkdirAll(layout.ConfigDir, 0o755); err != nil {
+		t.Fatalf("mkdir config dir: %v", err)
+	}
+
+	pluginJSON := `{
+  "schema_version": "v1",
+  "name": "son-of-the-forest-udp",
+  "version": "0.1.0",
+  "target": {"network": "udp", "address": "127.0.0.1:8766"},
+  "menu": {"server_config": "configs/server-son-of-the-forest.json", "client_config": "configs/client-son-of-the-forest.json"},
+  "runtime": {"type": "json", "mode": "passthrough"}
+}`
+	if err := os.WriteFile(filepath.Join(layout.PluginDir, "son-of-the-forest-udp", "plugin.json"), []byte(pluginJSON), 0o644); err != nil {
+		t.Fatalf("write plugin json: %v", err)
+	}
+
+	clientJSON := `{
+  "listen_network": "udp",
+  "listen_addr": "0.0.0.0:8766",
+  "server_ws_url": "ws://127.0.0.1:8080/ws",
+  "plugin_name": "son-of-the-forest-udp",
+  "udp_listeners": [
+    {"listen_addr": "0.0.0.0:8766", "target": "game"},
+    {"listen_addr": "0.0.0.0:9700", "target": "blob-sync"}
+  ]
+}`
+	if err := os.WriteFile(filepath.Join(layout.ConfigDir, "client-son-of-the-forest.json"), []byte(clientJSON), 0o644); err != nil {
+		t.Fatalf("write client template: %v", err)
+	}
+
+	cfg := config.DefaultClient()
+	cfg.ServerWSURL = "wss://road.example/ws"
+	cfg.AuthToken = "token"
+	cfg.AuthHeader = "X-ROAD-Token"
+
+	profile := serverPluginProfile{Name: "son-of-the-forest-udp", TargetNetwork: "udp"}
+	if err := applyLocalClientTemplateForProfile(layout, profile, cfg); err != nil {
+		t.Fatalf("applyLocalClientTemplateForProfile failed: %v", err)
+	}
+	if cfg.ServerWSURL != "wss://road.example/ws" || cfg.AuthToken != "token" {
+		t.Fatalf("connection credentials were not preserved: %#v", cfg)
+	}
+	if len(cfg.UDPListeners) != 2 {
+		t.Fatalf("expected 2 udp listeners, got %d", len(cfg.UDPListeners))
+	}
+	if cfg.UDPListeners[1].Target != "blob-sync" {
+		t.Fatalf("unexpected second listener target: %q", cfg.UDPListeners[1].Target)
 	}
 }
 
@@ -559,7 +619,7 @@ func TestApplyClientProfileFromServerPromptsAuthOnlyAfterUnauthorized(t *testing
 	cfg.ServerWSURL = strings.Replace(server.URL, "http://", "ws://", 1) + "/ws"
 	reader := bufio.NewReader(strings.NewReader("secret-token\n"))
 
-	if err := applyClientProfileFromServerWithAuthRetry(reader, cfg, true); err != nil {
+	if _, _, err := applyClientProfileFromServerWithAuthRetry(reader, cfg, true); err != nil {
 		t.Fatalf("applyClientProfileFromServerWithAuthRetry returned error: %v", err)
 	}
 	if cfg.AuthToken != "secret-token" {

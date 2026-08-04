@@ -28,12 +28,13 @@ go run ./cmd/road validate-plugin plugins/lethal-company-udp/plugin.json
 go run ./cmd/road validate-plugin plugins/minecraft/plugin.json
 go run ./cmd/road validate-plugin plugins/minecraft-bedrock-udp/plugin.json
 go run ./cmd/road validate-plugin plugins/sven-coop-udp/plugin.json
+go run ./cmd/road validate-plugin plugins/son-of-the-forest-udp/plugin.json
 ```
 
 Build packages:
 
 ```powershell
-$env:ROAD_VERSION = "v0.1.0"
+$env:ROAD_VERSION = "v0.2.0"
 ./scripts/build-cross.ps1 -Package -IncludeWindowsArm64
 ```
 
@@ -43,7 +44,7 @@ Smoke-test a fresh package extraction:
 $tmp = Join-Path $env:TEMP "road-release-smoke"
 Remove-Item -LiteralPath $tmp -Recurse -Force -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Path $tmp | Out-Null
-Expand-Archive .\build\release\road-proxy-v3_v0.1.0_windows_amd64.zip -DestinationPath $tmp
+Expand-Archive .\build\release\road-proxy-v3_v0.2.0_windows_amd64.zip -DestinationPath $tmp
 Push-Location $tmp
 .\road-proxy.exe --version
 .\road-proxy.exe validate --all-configs
@@ -57,10 +58,10 @@ Recommended flow:
 ```powershell
 git status --short
 git add .
-git commit -m "Prepare ROAD Proxy v3 0.1.0"
-git tag v0.1.0
+git commit -m "Release ROAD Proxy v3 0.2.0"
+git tag v0.2.0
 git push
-git push origin v0.1.0
+git push origin v0.2.0
 ```
 
 The GitHub Actions workflow should build release artifacts on tag push. Compare

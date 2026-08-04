@@ -88,6 +88,87 @@ func TestSchemaValidateRejectsInvalidTargetNetwork(t *testing.T) {
 	}
 }
 
+func TestSchemaValidateAcceptsNamedTargets(t *testing.T) {
+	s := Schema{
+		SchemaVersion: SchemaVersionV1,
+		Name:          "son-of-the-forest-udp",
+		Version:       "3.0.0",
+		Target: Target{
+			Network: "udp",
+			Address: "127.0.0.1:8766",
+		},
+		Targets: []Target{
+			{ID: "game", Network: "udp", Address: "127.0.0.1:8766"},
+			{ID: "query", Network: "udp", Address: "127.0.0.1:27016"},
+		},
+		Runtime: RuntimeConfig{
+			Type: RuntimeTypeJSON,
+			Mode: RuntimeModePassthrough,
+		},
+	}
+	s.Normalize()
+
+	if err := s.Validate(); err != nil {
+		t.Fatalf("expected named targets to validate, got error: %v", err)
+	}
+}
+
+func TestSchemaValidateRejectsDuplicateNamedTargets(t *testing.T) {
+	s := Schema{
+		SchemaVersion: SchemaVersionV1,
+		Name:          "game",
+		Version:       "3.0.0",
+		Target: Target{
+			Network: "udp",
+			Address: "127.0.0.1:7777",
+		},
+		Targets: []Target{
+			{ID: "game", Network: "udp", Address: "127.0.0.1:7777"},
+			{ID: "GAME", Network: "udp", Address: "127.0.0.1:7778"},
+		},
+		Runtime: RuntimeConfig{
+			Type: RuntimeTypeJSON,
+			Mode: RuntimeModePassthrough,
+		},
+	}
+	s.Normalize()
+
+	if err := s.Validate(); err == nil {
+		t.Fatal("expected duplicate target id validation error")
+	}
+}
+
+func TestRuntimePluginResolveTarget(t *testing.T) {
+	s := Schema{
+		SchemaVersion: SchemaVersionV1,
+		Name:          "game",
+		Version:       "3.0.0",
+		Target: Target{
+			Network: "udp",
+			Address: "127.0.0.1:7777",
+		},
+		Targets: []Target{
+			{ID: "query", Network: "udp", Address: "127.0.0.1:27016"},
+		},
+		Runtime: RuntimeConfig{
+			Type: RuntimeTypeJSON,
+			Mode: RuntimeModePassthrough,
+		},
+	}
+	p := NewRuntimePlugin(&s)
+
+	target, ok := p.ResolveTarget("query")
+	if !ok {
+		t.Fatal("expected query target to resolve")
+	}
+	if target.Address != "127.0.0.1:27016" {
+		t.Fatalf("unexpected target address: %s", target.Address)
+	}
+	if _, ok := p.ResolveTarget("missing"); ok {
+		t.Fatal("missing target should not resolve")
+	}
+}
+
 func TestSchemaValidateRejectsInvalidUDPReplyPolicy(t *testing.T) {
 	s := Schema{
 		SchemaVersion: SchemaVersionV1,

@@ -12,7 +12,7 @@ The practical goal: run ROAD server near the real game host, run ROAD client nea
 - Provides separate binaries for server, client, menu, and Plugin Studio.
 - Supports UDP session metrics for packet count, bytes, jitter, and RakNet-style loss estimates.
 - Supports optional UDP peer broadcast, disabled by default.
-- Keeps build scripts minimal: only Windows, Linux, and cross-build helpers live in `scripts/`.
+- Keeps `scripts/` focused on Windows/Linux/cross-build helpers and optional diagnostic capture tools.
 
 ## What It Is Not
 
@@ -179,7 +179,7 @@ user-facing builds.
 ## Versioning and Release Packages
 
 ROAD uses SemVer for tagged releases. Local development builds default to
-`0.1.0-dev`.
+`0.2.0-dev`.
 
 Check binary metadata:
 
@@ -192,14 +192,14 @@ Check binary metadata:
 
 Build scripts embed:
 
-- `ROAD_VERSION`, default `0.1.0-dev`
+- `ROAD_VERSION`, default `0.2.0-dev`
 - `ROAD_COMMIT`, default detected from `git rev-parse --short HEAD`
 - `ROAD_BUILD_DATE`, default current UTC time
 
 Example release build:
 
 ```powershell
-$env:ROAD_VERSION = "v0.1.0"
+$env:ROAD_VERSION = "v0.2.0"
 ./scripts/build-cross.ps1 -Package
 ```
 
@@ -347,6 +347,7 @@ game?"
 | `gzdoom-udp` | UDP | `127.0.0.1:5029` | `127.0.0.1:5029` | Use `-netmode 1`; keep peer broadcast off. |
 | `lethal-company-udp` | UDP | `127.0.0.1:7777` | usually `127.0.0.1:25568` | Experimental community profile for direct/LAN/local port traffic, not Steam relay traffic. |
 | `sven-coop-udp` | UDP | `127.0.0.1:27015` | usually `127.0.0.1:27015` | GoldSrc/Sven Co-op direct server traffic baseline. |
+| `son-of-the-forest-udp` | UDP | `127.0.0.1:8766`, `:9700`, `:27016` | `0.0.0.0:8766`, `:9700`, `:27016` | Field-tested SOTF dedicated server multi-port UDP profile. |
 
 A plugin target is the real service on the server side. A client listen address is what the local player connects to.
 
@@ -393,6 +394,7 @@ Useful non-interactive flags:
 
 - `--pid` or `--process`: choose the process to capture.
 - `--multi-phase`, `--phase-seconds`: capture lobby/connect/ingame/disconnect phases and write phase roles.
+- `--advanced-capture auto|off|required`: on Windows, optionally use elevated `pktmon` metadata capture; `auto` falls back to socket snapshots.
 - `--network tcp|udp`, `--target-host`, `--target-port`: override the target.
 - `--client-listen-port`: override local client listen port.
 - `--udp-peer-broadcast`: explicitly enable UDP peer broadcast.
@@ -412,9 +414,10 @@ Current behavior:
 - Adds process path, executable SHA256, and detected Steam AppID to reports when Windows exposes that information.
 - Writes `port_selection` into `studio-report.json`: selected network/port, selection reason, and rejected candidate ports.
 - Optional multi-phase capture writes `multi_phase` into reports with `lobby`, `connect`, `ingame`, and `disconnect` captures.
+- Optional Windows advanced capture adds real packet size, timing, packets-per-second, port activity, and conservative RakNet/SLikeNet signals. Raw PktMon captures are temporary and deleted after parsing.
 - Multi-phase reports classify ports as `persistent`, `connect_only`, `game_only`, `lobby_only`, `disconnect_only`, `connect_and_game`, or `multi_phase`.
 - Writes `packet_fingerprint` metadata from socket snapshots: flow direction, tick frequency, burst/streak stats, and TCP handshake estimates.
-- Packet sizes are explicitly marked unavailable in this mode because current scanners do not capture packets or payloads.
+- Without advanced capture, packet sizes remain explicitly unavailable because socket scanners do not capture packets or payloads.
 - Writes `topology` heuristics to classify the capture as `server_or_host`, `client_to_server`, `peer_to_peer_candidate`, `mixed_or_unclear`, or `unknown`.
 - Writes `unknown-game-report.json` for processes that do not match a compatibility profile.
 - Prefers stable non-ephemeral game ports over noisy ephemeral TCP ports.

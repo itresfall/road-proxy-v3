@@ -10,7 +10,7 @@ For most users, use the interactive menu binary first.
 
 On Windows:
 
-1. Download `road-proxy-v3_0.1.0_windows_amd64.zip` from the latest release.
+1. Download `road-proxy-v3_v0.2.0_windows_amd64.zip` from the latest release.
 2. Extract the zip.
 3. Run `road-proxy.exe`.
 4. Use the menu:
@@ -57,7 +57,7 @@ Linux builds are command-line binaries. Many desktop environments will not run t
 
 Simple way:
 
-1. Extract `road-proxy-v3_0.1.0_linux_amd64.zip` or the matching ARM64 zip.
+1. Extract `road-proxy-v3_v0.2.0_linux_amd64.zip` or the matching ARM64 zip.
 2. Open a terminal.
 3. Drag the built `road-proxy` file into the terminal so the full path appears.
 4. Press Enter.
@@ -75,10 +75,10 @@ Use `linux_amd64` for normal Intel/AMD Linux PCs. Use `linux_arm64` for ARM64 sy
 
 | File | Use |
 | --- | --- |
-| `road-proxy-v3_0.1.0_windows_amd64.zip` | Normal Windows PCs. Start with `road-proxy.exe`. |
-| `road-proxy-v3_0.1.0_windows_arm64.zip` | Windows on ARM64. Experimental until more hardware testing exists. |
-| `road-proxy-v3_0.1.0_linux_amd64.zip` | Normal Linux PCs/servers. Run from terminal. |
-| `road-proxy-v3_0.1.0_linux_arm64.zip` | ARM64 Linux servers/devices. Run from terminal. |
+| `road-proxy-v3_v0.2.0_windows_amd64.zip` | Normal Windows PCs. Start with `road-proxy.exe`. |
+| `road-proxy-v3_v0.2.0_windows_arm64.zip` | Windows on ARM64. Experimental until more hardware testing exists. |
+| `road-proxy-v3_v0.2.0_linux_amd64.zip` | Normal Linux PCs/servers. Run from terminal. |
+| `road-proxy-v3_v0.2.0_linux_arm64.zip` | ARM64 Linux servers/devices. Run from terminal. |
 | `*.sha256` | Checksum files for verifying downloads. |
 
 ## What It Does
@@ -89,6 +89,7 @@ Use `linux_amd64` for normal Intel/AMD Linux PCs. Use `linux_arm64` for ARM64 sy
 - Includes UDP metrics, MTU warnings, diagnostics, and synthetic UDP test tools.
 - Ships with an interactive menu and a browser dashboard/control API.
 - Includes Plugin Studio for Windows/Linux process scanning and draft profile generation.
+- On Windows, Plugin Studio can optionally enrich its report with temporary `pktmon` packet metadata and safely fall back when capture is unavailable.
 
 ## What It Is Not
 
@@ -107,8 +108,11 @@ Use `linux_amd64` for normal Intel/AMD Linux PCs. Use `linux_arm64` for ARM64 sy
 | `gzdoom-udp` | UDP | GZDoom direct UDP. Use `-netmode 1` for 3+ players. |
 | `sven-coop-udp` | UDP | Sven Co-op/GoldSrc direct server traffic. |
 | `lethal-company-udp` | UDP | Experimental direct/LAN/local UDP profile, not Steam relay traffic. |
+| `son-of-the-forest-udp` | UDP | Field-tested multi-port dedicated server profile: 3-player long session over `8766`, `9700`, `27016`. |
 
 A plugin target is the real service on the server side. A client listen address is what the local player connects to.
+
+Sons Of The Forest note: ROAD uses separate WebSocket sessions for each local UDP source/target flow, selected with `target=<id>` on connect. UDP payloads are not rewritten or wrapped with custom port headers. This keeps the game packets untouched and reduces head-of-line blocking between SOTF's multi-port flows.
 
 ## Documentation
 
@@ -121,6 +125,7 @@ Full documentation lives in [`docs/`](./docs/). Key starting points:
 - [Cloudflare integration](./docs/CLOUDFLARE-INTEGRATION.md) - TryCloudflare, named tunnels, and limits.
 - [Linux deployment](./docs/LINUX-DEPLOYMENT.md) - Linux server deployment notes.
 - [UDP diagnostics](./docs/UDP-MULTIPLAYER-DIAGNOSIS.md) - how to reason about UDP game issues.
+- [Sons Of The Forest UDP acceptance](./docs/SONS-OF-THE-FOREST-UDP-ACCEPTANCE.md) - multi-port field test notes.
 - [UDP check tool](./docs/UDP-CHECK.md) - synthetic UDP test flow without depending on a real game.
 - [Plugin Studio](./docs/CONFIG-PLUGIN-SYSTEM.md) - config and plugin profile model.
 - [Release checklist](./docs/RELEASE-CHECKLIST.md) - release preflight steps.
@@ -149,7 +154,7 @@ Linux build from PowerShell:
 Cross-platform release packages:
 
 ```powershell
-$env:ROAD_VERSION = "0.1.0"
+$env:ROAD_VERSION = "0.2.0"
 ./scripts/build-cross.ps1 -Package -IncludeWindowsArm64 -IncludeLinuxArm64
 ```
 

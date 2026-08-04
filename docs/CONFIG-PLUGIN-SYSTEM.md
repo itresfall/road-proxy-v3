@@ -96,6 +96,48 @@ UDP plugins can set two runtime-specific fields:
 
 Recommended default for known direct/LAN UDP game profiles is `same_ip`. Use `strict` only when the game always replies from the exact target port. Use `any` only for compatibility experiments or unknown games.
 
+## Multi-Port UDP Targets
+
+Most plugins use one legacy `target`. A game server with multiple fixed UDP
+listeners can also declare `targets[]`; the legacy target remains available as
+a fallback for older ROAD clients:
+
+```json
+{
+  "target": { "id": "game", "host": "127.0.0.1", "port": 8766 },
+  "targets": [
+    { "id": "game", "host": "127.0.0.1", "port": 8766 },
+    { "id": "blob-sync", "host": "127.0.0.1", "port": 9700 }
+  ]
+}
+```
+
+The matching client config uses `udp_listeners[]`. Each listener creates its
+own WebSocket session and selects the destination during setup with
+`target=<id>`. ROAD does not rewrite the game UDP payload or multiplex all
+ports into a custom packet format. This is the required shape for the Sons Of
+The Forest dedicated-server profile.
+
+## Plugin Studio Advanced Capture
+
+Socket snapshots remain the default cross-platform discovery mechanism.
+On Windows, Plugin Studio can additionally use the built-in `pktmon` tool to
+collect bounded packet metadata during a capture. The resulting report can
+include real UDP/TCP payload size distribution, packet timing, packets per
+second, port activity, and conservative RakNet/SLikeNet offline-magic signals.
+
+```powershell
+plugin-studio.exe --process "Game.exe" --advanced-capture auto
+plugin-studio.exe --process "Game.exe" --advanced-capture off
+plugin-studio.exe --process "Game.exe" --advanced-capture required
+```
+
+`auto` is the default. It gracefully falls back to socket snapshots when the
+process is not elevated or `pktmon` is unavailable. `required` stops instead
+of falling back. Raw PktMon files are kept in a temporary directory only and
+deleted after their aggregate metadata has been parsed. Linux packet capture
+support remains a later roadmap item.
+
 ## UDP Datagram Limits
 
 ROAD now treats configured `buffer_size` as the maximum UDP datagram payload it will forward for that side of the tunnel.

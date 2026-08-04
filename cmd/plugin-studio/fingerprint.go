@@ -355,6 +355,7 @@ func aggregatePhasePacketFingerprints(phases []capturePhaseSummary) *packetFinge
 	report := builder.report(totalTicks)
 	if report != nil {
 		report.ObservedEndpointCount = observedEndpoints
+		mergePhaseCapturedFingerprintData(report, phases)
 	}
 	return report
 }

@@ -19,6 +19,7 @@ func main() {
 	secondsFlag := flag.Int("seconds", 20, "capture duration seconds for non-interactive mode")
 	multiPhaseFlag := flag.Bool("multi-phase", false, "capture lobby/connect/ingame/disconnect phases")
 	phaseSecondsFlag := flag.Int("phase-seconds", 8, "capture duration seconds per multi-phase step")
+	advancedCaptureFlag := flag.String("advanced-capture", string(advancedCaptureAuto), "packet capture mode: auto, off, or required")
 	networkFlag := flag.String("network", "", "override network: tcp or udp")
 	targetHostFlag := flag.String("target-host", "", "override target host")
 	targetPortFlag := flag.Int("target-port", 0, "override target port")
@@ -30,6 +31,11 @@ func main() {
 	flag.Parse()
 	if *showVersion {
 		fmt.Println(version.String("plugin-studio"))
+		return
+	}
+	advancedCapture, err := normalizeAdvancedCaptureMode(*advancedCaptureFlag)
+	if err != nil {
+		fmt.Printf(sm("studio.error"), err)
 		return
 	}
 
@@ -51,6 +57,7 @@ func main() {
 		Seconds:          *secondsFlag,
 		MultiPhase:       *multiPhaseFlag,
 		PhaseSeconds:     *phaseSecondsFlag,
+		AdvancedCapture:  advancedCapture,
 		Network:          strings.TrimSpace(*networkFlag),
 		TargetHost:       strings.TrimSpace(*targetHostFlag),
 		TargetPort:       *targetPortFlag,

@@ -52,6 +52,17 @@ func (l *Loader) ListAvailable() ([]string, error) {
 		if !entry.IsDir() {
 			continue
 		}
+
+		// Empty scratch directories are not plugins. Only advertise folders that
+		// actually contain a schema, while still surfacing malformed schemas later
+		// through LoadEnabled.
+		schemaPath := filepath.Join(l.pluginDir, entry.Name(), "plugin.json")
+		if _, err := os.Stat(schemaPath); err != nil {
+			if os.IsNotExist(err) {
+				continue
+			}
+			return nil, fmt.Errorf("stat plugin schema %q: %w", schemaPath, err)
+		}
 		names = append(names, entry.Name())
 	}
 

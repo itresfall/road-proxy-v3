@@ -247,15 +247,18 @@ Bu dosya `PROJECT-TODO.md` icindeki daginik maddeleri is sirasina sokan ana yol 
 
 ## Faz 14 - Plugin Studio Gelismis Paket Yakalama
 
-{ } Plugin Studio'yu yeni soft capture mantigina tasarla: admin/capture araci varsa gelismis yakalama, yoksa mevcut netstat/ss/CIM akisina sessiz fallback.
-{ } Windows: `pktmon` entegrasyonu ekle; baslat/durdur/formatla/parse et akisini Plugin Studio report modeline bagla.
+{x} Plugin Studio'yu yeni soft capture mantigina tasarla: admin/capture araci varsa gelismis yakalama, yoksa mevcut netstat/ss/CIM akisina sessiz fallback.
+{x} Windows: `pktmon` entegrasyonu ekle; baslat/durdur/formatla/parse et akisini Plugin Studio report modeline bagla.
 { } Linux: `tcpdump`/`tshark` entegrasyonunu veya dogrudan pcap okuma katmanini tasarla.
-{ } Paket boyutu istatistiklerini fingerprint modeline ekle: min/avg/p95/max, >1200, >1400, >1472 sayaclari.
-{ } Paket yonu, timing, burst ve paket/saniye sinyallerini coklu port secim kararinda kullan.
-{ } Ilk byte analizi ile RakNet/ENet/SLikeNet benzeri UDP kutuphane imzalarini opsiyonel sinyal olarak ekle.
+{x} Paket boyutu istatistiklerini fingerprint modeline ekle: min/avg/p95/max, >1200, >1400, >1472 sayaclari.
+{x} Paket yonu, timing, burst ve paket/saniye sinyallerini coklu port secim kararinda kullan.
+{x} Ilk byte analizi ile RakNet/SLikeNet offline magic imzasini opsiyonel sinyal olarak ekle; ENet sinyali ayri kalir.
 { } Payload-ici-IP/port aramasini sadece deneysel spike olarak ekle; varsayilan otomatik rewrite karari verme.
-{ } Studio UI/CLI icine "gelismis yakalama" modu ekle ve admin izni/tool eksikligini okunur uyariyla goster.
+{x} Studio UI/CLI icine "gelismis yakalama" modu ekle ve admin izni/tool eksikligini okunur uyariyla goster.
 { } SOTF'ta elle yaptigimiz coklu UDP port tespitini Studio'nun otomatik profil oneri akisi haline getir.
+
+Not: Windows yakalama `auto|off|required` modlariyla opsiyoneldir. Ham PktMon
+dosyalari gecici dizinde tutulur ve aggregate report cikarildiktan sonra silinir.
 
 ## Kabul Kurali
 

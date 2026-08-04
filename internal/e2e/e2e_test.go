@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"testing"
@@ -159,6 +160,93 @@ func TestUDPWebSocketTunnelRoundTrip(t *testing.T) {
 	waitNoError(t, serverErrCh, 5*time.Second, "server")
 	waitNoError(t, clientErrCh, 5*time.Second, "client")
 	waitNoError(t, targetErrCh, 5*time.Second, "target")
+}
+
+func TestUDPWebSocketMultiPortTargets(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	udpAddrs := mustUniqueUDPAddrs(t, 4)
+	targetGameAddr := udpAddrs[0]
+	targetQueryAddr := udpAddrs[1]
+	clientGameListenAddr := udpAddrs[2]
+	clientQueryListenAddr := udpAddrs[3]
+	tcpAddrs := mustUniqueTCPAddrs(t, 3)
+	serverTCPAddr := tcpAddrs[0]
+	serverWSAddr := tcpAddrs[1]
+	serverControlAddr := tcpAddrs[2]
+
+	gameErrCh := make(chan error, 1)
+	go func() {
+		gameErrCh <- runUDPPrefixTarget(ctx, targetGameAddr, "game:")
+	}()
+	queryErrCh := make(chan error, 1)
+	go func() {
+		queryErrCh <- runUDPPrefixTarget(ctx, targetQueryAddr, "query:")
+	}()
+
+	root := t.TempDir()
+	pluginRoot := filepath.Join(root, "plugins")
+	mustWritePluginSchemaWithTargets(t, filepath.Join(pluginRoot, "multi-udp"), targetGameAddr, map[string]string{
+		"game":  targetGameAddr,
+		"query": targetQueryAddr,
+	})
+
+	serverCfg := config.Default()
+	serverCfg.TCP.ListenAddr = serverTCPAddr
+	serverCfg.HTTP.ListenAddr = serverWSAddr
+	serverCfg.Control.ListenAddr = serverControlAddr
+	serverCfg.Plugins.Dir = pluginRoot
+	serverCfg.Plugins.Enabled = []string{"multi-udp"}
+
+	server := engine.New(serverCfg, log.New(io.Discard, "", 0))
+	serverErrCh := make(chan error, 1)
+	go func() {
+		serverErrCh <- server.Start(ctx)
+	}()
+
+	select {
+	case err := <-serverErrCh:
+		t.Fatalf("server exited before ready: %v", err)
+	case <-time.After(150 * time.Millisecond):
+	}
+
+	waitPort(t, serverWSAddr, 8*time.Second)
+
+	clientCfg := config.DefaultClient()
+	clientCfg.ListenNetwork = "udp"
+	clientCfg.ListenAddr = clientGameListenAddr
+	clientCfg.ServerWSURL = fmt.Sprintf("ws://%s/ws", serverWSAddr)
+	clientCfg.PluginName = "multi-udp"
+	clientCfg.UDPListeners = []config.UDPListener{
+		{ListenAddr: clientGameListenAddr, Target: "game"},
+		{ListenAddr: clientQueryListenAddr, Target: "query"},
+	}
+	clientCfg.ConnectRetries = 5
+	clientCfg.RetryInitialDelay = "100ms"
+	clientCfg.RetryMaxDelay = "500ms"
+
+	tunnel := client.New(clientCfg, log.New(io.Discard, "", 0))
+	clientErrCh := make(chan error, 1)
+	go func() {
+		clientErrCh <- tunnel.Start(ctx)
+	}()
+
+	gotGame := roundTripUDP(t, clientGameListenAddr, "alpha", 8*time.Second)
+	if gotGame != "game:alpha" {
+		t.Fatalf("game target mismatch: got=%q want=%q", gotGame, "game:alpha")
+	}
+	gotQuery := roundTripUDP(t, clientQueryListenAddr, "beta", 8*time.Second)
+	if gotQuery != "query:beta" {
+		t.Fatalf("query target mismatch: got=%q want=%q", gotQuery, "query:beta")
+	}
+
+	cancel()
+
+	waitNoError(t, serverErrCh, 5*time.Second, "server")
+	waitNoError(t, clientErrCh, 5*time.Second, "client")
+	waitNoError(t, gameErrCh, 5*time.Second, "game target")
+	waitNoError(t, queryErrCh, 5*time.Second, "query target")
 }
 
 func TestUDPWebSocketTunnelRoundTripThreeClients(t *testing.T) {
@@ -829,6 +917,38 @@ func runUDPEchoTarget(ctx context.Context, addr string) error {
 	}
 }
 
+func runUDPPrefixTarget(ctx context.Context, addr, prefix string) error {
+	conn, err := net.ListenPacket("udp", addr)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	go func() {
+		<-ctx.Done()
+		_ = conn.Close()
+	}()
+
+	buf := make([]byte, 4096)
+	for {
+		_ = conn.SetReadDeadline(time.Now().Add(30 * time.Second))
+		n, remoteAddr, err := conn.ReadFrom(buf)
+		if n > 0 {
+			resp := append([]byte(prefix), buf[:n]...)
+			_, _ = conn.WriteTo(resp, remoteAddr)
+		}
+		if err != nil {
+			if ctx.Err() != nil {
+				return nil
+			}
+			if ne, ok := err.(net.Error); ok && ne.Timeout() {
+				continue
+			}
+			return err
+		}
+	}
+}
+
 func runUDPTruncationTarget(ctx context.Context, addr string, largeReplySize int) error {
 	conn, err := net.ListenPacket("udp", addr)
 	if err != nil {
@@ -962,6 +1082,46 @@ func mustWritePluginSchema(t *testing.T, pluginDir string, pluginName, targetNet
     "server_pipeline": []
   }
 }`, pluginName, targetNetwork, targetAddr)
+
+	if err := os.WriteFile(filepath.Join(pluginDir, "plugin.json"), []byte(schema), 0o644); err != nil {
+		t.Fatalf("write plugin schema: %v", err)
+	}
+}
+
+func mustWritePluginSchemaWithTargets(t *testing.T, pluginDir, targetAddr string, targets map[string]string) {
+	t.Helper()
+
+	if err := os.MkdirAll(pluginDir, 0o755); err != nil {
+		t.Fatalf("mkdir plugin dir: %v", err)
+	}
+
+	targetEntries := make([]string, 0, len(targets))
+	for id, addr := range targets {
+		targetEntries = append(targetEntries, fmt.Sprintf(`{"id":%q,"network":"udp","address":%q}`, id, addr))
+	}
+	sort.Strings(targetEntries)
+
+	schema := fmt.Sprintf(`{
+  "schema_version": "v1",
+  "name": "multi-udp",
+  "version": "3.0.0",
+  "description": "e2e multi target udp schema",
+  "author": "test",
+  "protocols": { "supported": ["udp", "websocket"] },
+  "target": { "network": "udp", "address": %q },
+  "targets": [%s],
+  "capabilities": {
+    "supports_reconnect": true,
+    "supports_multiplex": true
+  },
+  "runtime": {
+    "type": "json",
+    "mode": "passthrough",
+    "enable_obfuscation": false,
+    "client_pipeline": [],
+    "server_pipeline": []
+  }
+}`, targetAddr, strings.Join(targetEntries, ","))
 
 	if err := os.WriteFile(filepath.Join(pluginDir, "plugin.json"), []byte(schema), 0o644); err != nil {
 		t.Fatalf("write plugin schema: %v", err)

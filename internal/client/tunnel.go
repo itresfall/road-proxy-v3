@@ -126,9 +126,34 @@ func (t *Tunnel) startUDP(ctx context.Context) error {
 	}
 	defer t.closeUDPRecorder()
 
-	packetConn, err := net.ListenPacket("udp", t.cfg.ListenAddr)
+	if len(t.cfg.UDPListeners) == 0 {
+		return t.startUDPListener(ctx, t.cfg.ListenAddr, "")
+	}
+
+	childCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	errCh := make(chan error, len(t.cfg.UDPListeners))
+	for _, listener := range t.cfg.UDPListeners {
+		listenAddr := listener.ListenAddr
+		targetID := listener.Target
+		go func() {
+			errCh <- t.startUDPListener(childCtx, listenAddr, targetID)
+		}()
+	}
+
+	firstErr := <-errCh
+	cancel()
+	for i := 1; i < len(t.cfg.UDPListeners); i++ {
+		<-errCh
+	}
+	return firstErr
+}
+
+func (t *Tunnel) startUDPListener(ctx context.Context, listenAddr, targetID string) error {
+	packetConn, err := net.ListenPacket("udp", listenAddr)
 	if err != nil {
-		return fmt.Errorf("listen %s (udp): %w", t.cfg.ListenAddr, err)
+		return fmt.Errorf("listen %s (udp): %w", listenAddr, err)
 	}
 	defer packetConn.Close()
 
@@ -137,12 +162,16 @@ func (t *Tunnel) startUDP(ctx context.Context) error {
 		_ = packetConn.Close()
 	}()
 
-	targetWS, err := t.buildWSURL()
+	targetWS, err := t.buildWSURLForTarget(targetID)
 	if err != nil {
 		return err
 	}
 
-	t.logger.Printf("client listener active: game_target=%s road_server=%s plugin=%s network=udp", t.cfg.ListenAddr, targetWS, t.cfg.PluginName)
+	if strings.TrimSpace(targetID) == "" {
+		t.logger.Printf("client listener active: game_target=%s road_server=%s plugin=%s network=udp", listenAddr, targetWS, t.cfg.PluginName)
+	} else {
+		t.logger.Printf("client listener active: game_target=%s road_server=%s plugin=%s network=udp target=%s", listenAddr, targetWS, t.cfg.PluginName, targetID)
+	}
 
 	sessions := map[string]*udpSession{}
 	var sessionsMu sync.Mutex
@@ -730,6 +759,10 @@ func (t *Tunnel) proxy(localConn net.Conn, wsConn *websocket.Conn) error {
 }
 
 func (t *Tunnel) buildWSURL() (string, error) {
+	return t.buildWSURLForTarget("")
+}
+
+func (t *Tunnel) buildWSURLForTarget(targetID string) (string, error) {
 	raw := strings.TrimSpace(t.cfg.ServerWSURL)
 	if raw == "" {
 		return "", fmt.Errorf("server_ws_url cannot be empty")
@@ -750,6 +783,10 @@ func (t *Tunnel) buildWSURL() (string, error) {
 	query := u.Query()
 	if t.cfg.PluginName != "" && query.Get("plugin") == "" {
 		query.Set("plugin", t.cfg.PluginName)
+	}
+	targetID = strings.TrimSpace(targetID)
+	if targetID != "" {
+		query.Set("target", targetID)
 	}
 	u.RawQuery = query.Encode()
 

@@ -64,6 +64,16 @@ func runInteractiveStudio(layout app.RuntimeLayout) {
 		fmt.Printf(sm("studio.error"), err)
 		return
 	}
+	useAdvancedCapture, err := askYesNo(reader, sm("studio.advanced_capture_prompt"), true)
+	if err != nil {
+		fmt.Printf(sm("studio.error"), err)
+		return
+	}
+	advancedCapture := advancedCaptureAuto
+	if !useAdvancedCapture {
+		advancedCapture = advancedCaptureOff
+	}
+	options := captureOptions{AdvancedCapture: advancedCapture}
 
 	var summary *captureSummary
 	if multiPhase {
@@ -77,23 +87,24 @@ func runInteractiveStudio(layout app.RuntimeLayout) {
 			phaseSeconds = 5
 		}
 		fmt.Println("")
-		summary, err = captureProcessPhases(selected.PID, selected.Name, phaseSeconds, time.Second, func(phase capturePhase) error {
+		summary, err = captureProcessPhasesWithOptions(selected.PID, selected.Name, phaseSeconds, time.Second, func(phase capturePhase) error {
 			_, readErr := readText(reader, fmt.Sprintf(sm("studio.phase_ready_prompt"), sm(phase.LabelKey), sm(phase.InstructionKey)))
 			return readErr
-		})
+		}, options)
 	} else {
 		fmt.Println("")
 		fmt.Printf(sm("studio.capture_started"), selected.PID, selected.Name, seconds)
 		fmt.Println(sm("studio.capture_instruction"))
 		fmt.Println("")
 
-		summary, err = captureProcess(selected.PID, selected.Name, time.Duration(seconds)*time.Second, time.Second)
+		summary, err = captureProcessWithOptions(selected.PID, selected.Name, time.Duration(seconds)*time.Second, time.Second, options)
 	}
 	if err != nil {
 		fmt.Printf(sm("studio.error_capture_failed"), err)
 		return
 	}
 	enrichCaptureWithProcessSignals(summary, selected)
+	printAdvancedCaptureStatus(summary.AdvancedCapture)
 
 	network := summary.RecommendedNet
 	if network == "" {

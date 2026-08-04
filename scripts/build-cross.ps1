@@ -27,7 +27,7 @@ function Get-RoadCommit {
   return "unknown"
 }
 
-$version = if ([string]::IsNullOrWhiteSpace($env:ROAD_VERSION)) { "0.1.0-dev" } else { $env:ROAD_VERSION }
+$version = if ([string]::IsNullOrWhiteSpace($env:ROAD_VERSION)) { "0.2.0-dev" } else { $env:ROAD_VERSION }
 $commit = Get-RoadCommit
 $buildDate = if ([string]::IsNullOrWhiteSpace($env:ROAD_BUILD_DATE)) { (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ") } else { $env:ROAD_BUILD_DATE }
 $ldflags = "-X road-proxy-v3/internal/version.Version=$version -X road-proxy-v3/internal/version.Commit=$commit -X road-proxy-v3/internal/version.BuildDate=$buildDate"

@@ -16,6 +16,19 @@ tmp-*.err.log
 configs/.generated/
 configs/.generated-*.json
 
+# Packet captures and local credentials must never become source artifacts.
+*.etl
+*.pcap
+*.pcapng
+.env
+.env.*
+!.env.example
+
+# Local field-test exports are evidence, not release/source artifacts.
+/iyi internet.txt
+/kötü internet.txt
+
 # Local scratch folders from one-off maintenance tasks
+.tmp/
 .document-copy-tool/
 .winutil-inspect/

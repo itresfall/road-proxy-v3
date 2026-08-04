@@ -83,3 +83,26 @@ func TestLoaderLoadEnabledFailsForMissingPlugin(t *testing.T) {
 		t.Fatal("expected missing plugin error")
 	}
 }
+
+func TestLoaderListAvailableIgnoresDirectoriesWithoutSchema(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, "scratch"), 0o755); err != nil {
+		t.Fatalf("create scratch directory: %v", err)
+	}
+
+	pluginDir := filepath.Join(root, "minecraft")
+	if err := os.MkdirAll(pluginDir, 0o755); err != nil {
+		t.Fatalf("create plugin directory: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(pluginDir, "plugin.json"), []byte(`{}`), 0o644); err != nil {
+		t.Fatalf("write plugin schema marker: %v", err)
+	}
+
+	names, err := NewLoader(root).ListAvailable()
+	if err != nil {
+		t.Fatalf("list available plugins: %v", err)
+	}
+	if len(names) != 1 || names[0] != "minecraft" {
+		t.Fatalf("available plugins = %v, want [minecraft]", names)
+	}
+}

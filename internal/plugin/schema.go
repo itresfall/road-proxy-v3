@@ -28,6 +28,7 @@ type Schema struct {
 	Author        string                `json:"author"`
 	Protocols     Protocols             `json:"protocols"`
 	Target        Target                `json:"target"`
+	Targets       []Target              `json:"targets,omitempty"`
 	Menu          Menu                  `json:"menu"`
 	Capabilities  Capabilities          `json:"capabilities"`
 	Compatibility CompatibilityMetadata `json:"compatibility"`
@@ -41,6 +42,9 @@ type Protocols struct {
 type Target struct {
 	Network string `json:"network"`
 	Address string `json:"address"`
+	ID      string `json:"id,omitempty"`
+	Role    string `json:"role,omitempty"`
+	Notes   string `json:"notes,omitempty"`
 }
 
 type Menu struct {
@@ -88,6 +92,21 @@ func (s *Schema) Normalize() {
 	if s.Target.Network == "" {
 		s.Target.Network = "tcp"
 	}
+	s.Target.Network = strings.ToLower(strings.TrimSpace(s.Target.Network))
+	s.Target.ID = strings.TrimSpace(s.Target.ID)
+	s.Target.Role = strings.TrimSpace(s.Target.Role)
+	s.Target.Notes = strings.TrimSpace(s.Target.Notes)
+	s.Target.Address = strings.TrimSpace(s.Target.Address)
+	for i := range s.Targets {
+		if s.Targets[i].Network == "" {
+			s.Targets[i].Network = s.Target.Network
+		}
+		s.Targets[i].Network = strings.ToLower(strings.TrimSpace(s.Targets[i].Network))
+		s.Targets[i].ID = strings.TrimSpace(s.Targets[i].ID)
+		s.Targets[i].Role = strings.TrimSpace(s.Targets[i].Role)
+		s.Targets[i].Notes = strings.TrimSpace(s.Targets[i].Notes)
+		s.Targets[i].Address = strings.TrimSpace(s.Targets[i].Address)
+	}
 	if s.Runtime.Type == "" {
 		s.Runtime.Type = RuntimeTypeJSON
 	}
@@ -113,10 +132,19 @@ func (s *Schema) Validate() error {
 	if s.Target.Address == "" {
 		return fmt.Errorf("target.address is required")
 	}
-	switch s.Target.Network {
-	case "tcp", "udp":
-	default:
-		return fmt.Errorf("target.network must be %q or %q", "tcp", "udp")
+	if err := validateTarget("target", s.Target, false); err != nil {
+		return err
+	}
+	seenTargetIDs := map[string]struct{}{}
+	for i, target := range s.Targets {
+		if err := validateTarget(fmt.Sprintf("targets[%d]", i), target, true); err != nil {
+			return err
+		}
+		id := strings.ToLower(target.ID)
+		if _, ok := seenTargetIDs[id]; ok {
+			return fmt.Errorf("targets[%d].id %q is duplicated", i, target.ID)
+		}
+		seenTargetIDs[id] = struct{}{}
 	}
 
 	switch s.Runtime.Type {
@@ -152,6 +180,21 @@ func (s *Schema) Validate() error {
 		return fmt.Errorf("invalid compatibility metadata: %w", err)
 	}
 
+	return nil
+}
+
+func validateTarget(field string, target Target, requireID bool) error {
+	if requireID && target.ID == "" {
+		return fmt.Errorf("%s.id is required", field)
+	}
+	if target.Address == "" {
+		return fmt.Errorf("%s.address is required", field)
+	}
+	switch target.Network {
+	case "tcp", "udp":
+	default:
+		return fmt.Errorf("%s.network must be %q or %q", field, "tcp", "udp")
+	}
 	return nil
 }
 

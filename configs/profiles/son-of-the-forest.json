@@ -1,0 +1,40 @@
+{
+  "name": "son-of-the-forest",
+  "server": {
+    "tcp": {
+      "listen_addr": "0.0.0.0:0"
+    },
+    "http": {
+      "ws_idle_timeout": "10m0s"
+    },
+    "plugins": {
+      "enabled": [
+        "son-of-the-forest-udp"
+      ]
+    }
+  },
+  "client": {
+    "listen_addr": "0.0.0.0:8766",
+    "listen_network": "udp",
+    "plugin_name": "son-of-the-forest-udp",
+    "connect_retries": 6,
+    "retry_initial_delay": "100ms",
+    "retry_max_delay": "600ms",
+    "ws_idle_timeout": "10m0s",
+    "udp_session_idle_timeout": "10m0s",
+    "udp_listeners": [
+      {
+        "listen_addr": "0.0.0.0:8766",
+        "target": "game"
+      },
+      {
+        "listen_addr": "0.0.0.0:9700",
+        "target": "blob-sync"
+      },
+      {
+        "listen_addr": "0.0.0.0:27016",
+        "target": "query"
+      }
+    ]
+  }
+}

@@ -233,6 +233,75 @@ func TestLoadClientRejectsInvalidListenNetwork(t *testing.T) {
 	}
 }
 
+func TestLoadClientAcceptsUDPListeners(t *testing.T) {
+	root := t.TempDir()
+	path := filepath.Join(root, "client.json")
+
+	raw := `{
+  "listen_network": "udp",
+  "server_ws_url": "ws://127.0.0.1:8080/ws",
+  "udp_listeners": [
+    {"listen_addr": "127.0.0.1:8766", "target": "game"},
+    {"listen_addr": "127.0.0.1:27016", "target": "query"}
+  ]
+}`
+	if err := os.WriteFile(path, []byte(raw), 0o644); err != nil {
+		t.Fatalf("write client config failed: %v", err)
+	}
+
+	cfg, err := LoadClient(path)
+	if err != nil {
+		t.Fatalf("load client config failed: %v", err)
+	}
+	if len(cfg.UDPListeners) != 2 {
+		t.Fatalf("expected 2 udp listeners, got %d", len(cfg.UDPListeners))
+	}
+	if cfg.UDPListeners[1].Target != "query" {
+		t.Fatalf("unexpected second target: %q", cfg.UDPListeners[1].Target)
+	}
+}
+
+func TestLoadClientRejectsUDPListenersForTCP(t *testing.T) {
+	root := t.TempDir()
+	path := filepath.Join(root, "client.json")
+
+	raw := `{
+  "listen_network": "tcp",
+  "server_ws_url": "ws://127.0.0.1:8080/ws",
+  "udp_listeners": [
+    {"listen_addr": "127.0.0.1:8766", "target": "game"}
+  ]
+}`
+	if err := os.WriteFile(path, []byte(raw), 0o644); err != nil {
+		t.Fatalf("write client config failed: %v", err)
+	}
+
+	if _, err := LoadClient(path); err == nil {
+		t.Fatal("expected udp_listeners with tcp listen_network to fail")
+	}
+}
+
+func TestLoadClientRejectsDuplicateUDPListeners(t *testing.T) {
+	root := t.TempDir()
+	path := filepath.Join(root, "client.json")
+
+	raw := `{
+  "listen_network": "udp",
+  "server_ws_url": "ws://127.0.0.1:8080/ws",
+  "udp_listeners": [
+    {"listen_addr": "127.0.0.1:8766", "target": "game"},
+    {"listen_addr": "127.0.0.1:8766", "target": "query"}
+  ]
+}`
+	if err := os.WriteFile(path, []byte(raw), 0o644); err != nil {
+		t.Fatalf("write client config failed: %v", err)
+	}
+
+	if _, err := LoadClient(path); err == nil {
+		t.Fatal("expected duplicate udp listeners to fail")
+	}
+}
+
 func TestLoadClientRejectsInvalidServerWSURL(t *testing.T) {
 	root := t.TempDir()
 	path := filepath.Join(root, "client.json")

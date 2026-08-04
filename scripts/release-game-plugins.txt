@@ -6,4 +6,5 @@ gzdoom-udp
 lethal-company-udp
 minecraft
 minecraft-bedrock-udp
+son-of-the-forest-udp
 sven-coop-udp

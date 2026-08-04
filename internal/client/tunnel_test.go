@@ -43,6 +43,40 @@ func TestBuildWSURLKeepsExistingPluginQuery(t *testing.T) {
 	}
 }
 
+func TestBuildWSURLForTargetAddsTargetQuery(t *testing.T) {
+	cfg := config.DefaultClient()
+	cfg.ServerWSURL = "ws://localhost:8080/ws?plugin=son-of-the-forest-udp"
+	cfg.PluginName = "son-of-the-forest-udp"
+
+	tunnel := New(cfg, nil)
+
+	wsURL, err := tunnel.buildWSURLForTarget("query")
+	if err != nil {
+		t.Fatalf("buildWSURLForTarget failed: %v", err)
+	}
+
+	if wsURL != "ws://localhost:8080/ws?plugin=son-of-the-forest-udp&target=query" {
+		t.Fatalf("unexpected ws url: %s", wsURL)
+	}
+}
+
+func TestBuildWSURLForTargetOverridesExistingTargetQuery(t *testing.T) {
+	cfg := config.DefaultClient()
+	cfg.ServerWSURL = "ws://localhost:8080/ws?plugin=game&target=old"
+	cfg.PluginName = "game"
+
+	tunnel := New(cfg, nil)
+
+	wsURL, err := tunnel.buildWSURLForTarget("new")
+	if err != nil {
+		t.Fatalf("buildWSURLForTarget failed: %v", err)
+	}
+
+	if wsURL != "ws://localhost:8080/ws?plugin=game&target=new" {
+		t.Fatalf("unexpected ws url: %s", wsURL)
+	}
+}
+
 func TestBuildWSURLRejectsInvalidScheme(t *testing.T) {
 	cfg := config.DefaultClient()
 	cfg.ServerWSURL = "http://localhost:8080/ws"

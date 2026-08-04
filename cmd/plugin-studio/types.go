@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"strconv"
+	"strings"
 )
 
 type endpoint struct {
@@ -64,6 +66,7 @@ type studioCLIOptions struct {
 	Seconds          int
 	MultiPhase       bool
 	PhaseSeconds     int
+	AdvancedCapture  advancedCaptureMode
 	Network          string
 	TargetHost       string
 	TargetPort       int
@@ -71,6 +74,29 @@ type studioCLIOptions struct {
 	PluginName       string
 	UDPPeerBroadcast optionalBool
 	Force            bool
+}
+
+// advancedCaptureMode controls the optional packet-level capture source.
+// Socket snapshots remain the safe fallback on every platform.
+type advancedCaptureMode string
+
+const (
+	advancedCaptureAuto     advancedCaptureMode = "auto"
+	advancedCaptureOff      advancedCaptureMode = "off"
+	advancedCaptureRequired advancedCaptureMode = "required"
+)
+
+func normalizeAdvancedCaptureMode(raw string) (advancedCaptureMode, error) {
+	mode := advancedCaptureMode(strings.ToLower(strings.TrimSpace(raw)))
+	if mode == "" {
+		return advancedCaptureAuto, nil
+	}
+	switch mode {
+	case advancedCaptureAuto, advancedCaptureOff, advancedCaptureRequired:
+		return mode, nil
+	default:
+		return "", fmt.Errorf("advanced capture must be auto, off, or required")
+	}
 }
 
 func (o studioCLIOptions) Enabled() bool {
@@ -82,6 +108,7 @@ func (o studioCLIOptions) Enabled() bool {
 		o.TargetPort > 0 ||
 		o.ClientListenPort > 0 ||
 		o.PluginName != "" ||
+		normalizedCaptureMode(o.AdvancedCapture) != advancedCaptureAuto ||
 		o.UDPPeerBroadcast.set ||
 		o.Force
 }
@@ -121,6 +148,7 @@ type captureSummary struct {
 	PortSelection     *portSelectionReport     `json:"port_selection,omitempty"`
 	MultiPhase        *multiPhaseReport        `json:"multi_phase,omitempty"`
 	PacketFingerprint *packetFingerprintReport `json:"packet_fingerprint,omitempty"`
+	AdvancedCapture   *advancedCaptureReport   `json:"advanced_capture,omitempty"`
 	Topology          *topologyReport          `json:"topology,omitempty"`
 	ClientListenPort  int                      `json:"client_listen_port,omitempty"`
 	UDPPeerBroadcast  bool                     `json:"udp_peer_broadcast"`
@@ -145,17 +173,76 @@ type capturePhaseSummary struct {
 	RecommendedNet    string                   `json:"recommended_network"`
 	RecommendedPort   int                      `json:"recommended_port"`
 	PacketFingerprint *packetFingerprintReport `json:"packet_fingerprint,omitempty"`
+	AdvancedCapture   *advancedCaptureReport   `json:"advanced_capture,omitempty"`
 }
 
 type packetFingerprintReport struct {
-	Source                string            `json:"source"`
-	PacketSizeObserved    bool              `json:"packet_size_observed"`
-	PacketSizeSource      string            `json:"packet_size_source"`
-	PacketSizeNote        string            `json:"packet_size_note"`
-	TotalTicks            int               `json:"total_ticks"`
-	ObservedEndpointCount int               `json:"observed_endpoint_count"`
-	TopFlows              []flowFingerprint `json:"top_flows"`
-	PortFingerprints      []portFingerprint `json:"port_fingerprints"`
+	Source                string             `json:"source"`
+	PacketSizeObserved    bool               `json:"packet_size_observed"`
+	PacketSizeSource      string             `json:"packet_size_source"`
+	PacketSizeNote        string             `json:"packet_size_note"`
+	TotalTicks            int                `json:"total_ticks"`
+	ObservedEndpointCount int                `json:"observed_endpoint_count"`
+	TopFlows              []flowFingerprint  `json:"top_flows"`
+	PortFingerprints      []portFingerprint  `json:"port_fingerprints"`
+	PacketSize            *packetSizeStats   `json:"packet_size,omitempty"`
+	PacketTiming          *packetTimingStats `json:"packet_timing,omitempty"`
+	CapturedPorts         []capturedPortStat `json:"captured_ports,omitempty"`
+	LibrarySignals        []librarySignal    `json:"library_signals,omitempty"`
+}
+
+// advancedCaptureReport contains only capture metadata and aggregate results.
+// Raw frames stay in a temporary directory and are deleted after parsing.
+type advancedCaptureReport struct {
+	RequestedMode   string `json:"requested_mode"`
+	Backend         string `json:"backend,omitempty"`
+	Status          string `json:"status"`
+	Note            string `json:"note,omitempty"`
+	CapturedPackets int    `json:"captured_packets,omitempty"`
+	MatchedPackets  int    `json:"matched_packets,omitempty"`
+}
+
+type packetSizeStats struct {
+	Unit          string  `json:"unit"`
+	Packets       int     `json:"packets"`
+	MinBytes      int     `json:"min_bytes"`
+	AverageBytes  float64 `json:"average_bytes"`
+	P95Bytes      int     `json:"p95_bytes"`
+	MaxBytes      int     `json:"max_bytes"`
+	Over1200Bytes int     `json:"over_1200_bytes"`
+	Over1400Bytes int     `json:"over_1400_bytes"`
+	Over1472Bytes int     `json:"over_1472_bytes"`
+	samples       []int
+}
+
+type packetTimingStats struct {
+	Packets            int     `json:"packets"`
+	DurationMillis     float64 `json:"duration_millis"`
+	PacketsPerSecond   float64 `json:"packets_per_second"`
+	MinGapMillis       float64 `json:"min_gap_millis,omitempty"`
+	AverageGapMillis   float64 `json:"average_gap_millis,omitempty"`
+	P95GapMillis       float64 `json:"p95_gap_millis,omitempty"`
+	MaxGapMillis       float64 `json:"max_gap_millis,omitempty"`
+	gapSamplesMillis   []float64
+	firstTimestampNano int64
+	lastTimestampNano  int64
+}
+
+type capturedPortStat struct {
+	Network          string  `json:"network"`
+	Scope            string  `json:"scope"`
+	Port             int     `json:"port"`
+	Packets          int     `json:"packets"`
+	PayloadBytes     int64   `json:"payload_bytes"`
+	PacketsPerSecond float64 `json:"packets_per_second"`
+	BurstCount       int     `json:"burst_count"`
+}
+
+type librarySignal struct {
+	Library    string `json:"library"`
+	Confidence string `json:"confidence"`
+	Evidence   string `json:"evidence"`
+	Packets    int    `json:"packets"`
 }
 
 type topologyReport struct {

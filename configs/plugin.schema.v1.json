@@ -58,7 +58,23 @@
         "address": {
           "type": "string",
           "minLength": 1
+        },
+        "id": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
         }
+      }
+    },
+    "targets": {
+      "type": "array",
+      "description": "Optional named targets for multi-port plugins. Legacy clients use target; multi-port clients select one target id per WebSocket connection.",
+      "items": {
+        "$ref": "#/$defs/target"
       }
     },
     "menu": {
@@ -183,6 +199,37 @@
     }
   },
   "$defs": {
+    "target": {
+      "type": "object",
+      "required": [
+        "id",
+        "network",
+        "address"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "network": {
+          "type": "string",
+          "enum": [
+            "tcp",
+            "udp"
+          ]
+        },
+        "address": {
+          "type": "string",
+          "minLength": 1
+        },
+        "role": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
     "known_port": {
       "type": "object",
       "required": [

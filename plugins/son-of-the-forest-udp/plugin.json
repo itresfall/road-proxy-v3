@@ -1,0 +1,102 @@
+{
+  "schema_version": "v1",
+  "name": "son-of-the-forest-udp",
+  "version": "1.0.0",
+  "description": "Sons Of The Forest dedicated server multi-port UDP profile",
+  "author": "road-proxy",
+  "protocols": {
+    "supported": [
+      "udp",
+      "websocket"
+    ]
+  },
+  "target": {
+    "network": "udp",
+    "address": "127.0.0.1:8766",
+    "role": "game",
+    "notes": "Legacy single-target fallback for older ROAD clients."
+  },
+  "targets": [
+    {
+      "id": "game",
+      "network": "udp",
+      "address": "127.0.0.1:8766",
+      "role": "game",
+      "notes": "Observed Sons Of The Forest dedicated server game UDP listener."
+    },
+    {
+      "id": "blob-sync",
+      "network": "udp",
+      "address": "127.0.0.1:9700",
+      "role": "blob-sync",
+      "notes": "Observed dedicated server UDP listener used alongside game traffic."
+    },
+    {
+      "id": "query",
+      "network": "udp",
+      "address": "127.0.0.1:27016",
+      "role": "query",
+      "notes": "Observed dedicated server query/broadcast UDP port."
+    }
+  ],
+  "menu": {
+    "server_config": "configs/server-son-of-the-forest.json",
+    "client_config": "configs/client-son-of-the-forest.json"
+  },
+  "capabilities": {
+    "supports_reconnect": true,
+    "supports_multiplex": true
+  },
+  "compatibility": {
+    "status": "working",
+    "tested_players": 3,
+    "known_ports": [
+      {
+        "network": "udp",
+        "port": 8766,
+        "role": "game",
+        "notes": "Observed fixed dedicated server UDP listener."
+      },
+      {
+        "network": "udp",
+        "port": 9700,
+        "role": "blob-sync",
+        "notes": "Observed fixed dedicated server UDP listener."
+      },
+      {
+        "network": "udp",
+        "port": 27016,
+        "role": "query",
+        "notes": "Observed fixed dedicated server UDP listener."
+      }
+    ],
+    "launch_args": [
+      "Run the Sons Of The Forest dedicated server on the ROAD server machine.",
+      "Keep ROAD server targets on 127.0.0.1 if the dedicated server binds 0.0.0.0; change target addresses to the LAN IP if the game server rejects loopback.",
+      "On the client machine, if the game refuses 127.0.0.1, keep ROAD client listeners on 0.0.0.0 and connect in-game to that machine's LAN IP."
+    ],
+    "notes": [
+      "ROAD carries direct/LAN/local UDP flows only; Steam lobby, Steam relay, and authentication traffic are outside this tunnel.",
+      "This profile uses named multi-port UDP targets. Older ROAD clients only use the legacy 8766 target.",
+      "Do not add observed ephemeral client or Steam-side ports to the plugin; those are not fixed dedicated-server targets."
+    ],
+    "last_verified": "2026-06-29"
+  },
+  "runtime": {
+    "type": "json",
+    "mode": "passthrough",
+    "enable_obfuscation": false,
+    "udp_peer_broadcast": false,
+    "udp_reply_policy": "same_ip",
+    "client_pipeline": [],
+    "server_pipeline": []
+  },
+  "studio": {
+    "process_name": "SonsOfTheForestDS",
+    "notes": [
+      "Captured with scripts/sotf-port-capture.ps1 on 2026-06-28.",
+      "Fixed dedicated server UDP listeners observed: 8766, 9700, 27016.",
+      "Observed dynamic Steam-related UDP listeners are intentionally not default ROAD targets."
+    ]
+  }
+}

@@ -128,6 +128,21 @@ func (e *Engine) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	requestedTarget := strings.TrimSpace(r.URL.Query().Get("target"))
+	selectedTarget, ok := selectedPlugin.ResolveTarget(requestedTarget)
+	if !ok {
+		http.Error(w, fmt.Sprintf("unknown plugin target %q", requestedTarget), http.StatusBadRequest)
+		return
+	}
+	targetNetwork := strings.TrimSpace(selectedTarget.Network)
+	if targetNetwork == "" {
+		targetNetwork = selectedPlugin.TargetNetwork()
+	}
+	targetAddress := strings.TrimSpace(selectedTarget.Address)
+	if targetAddress == "" {
+		http.Error(w, "plugin target address is empty", http.StatusBadGateway)
+		return
+	}
 
 	wsConn, err := e.wsUpgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -142,15 +157,15 @@ func (e *Engine) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	sessionID := e.stats.StartSession(SessionMeta{
 		Plugin:     pluginName,
 		Transport:  "websocket",
-		Network:    selectedPlugin.TargetNetwork(),
+		Network:    targetNetwork,
 		RemoteAddr: r.RemoteAddr,
-		TargetAddr: selectedPlugin.TargetAddress(),
+		TargetAddr: targetAddress,
 	})
 	defer e.stats.EndSession(sessionID)
 
-	if selectedPlugin.TargetNetwork() == "udp" {
+	if targetNetwork == "udp" {
 		// Use packet socket so replies from alternate source ports are also accepted.
-		targetAddr, resolveErr := net.ResolveUDPAddr("udp", selectedPlugin.TargetAddress())
+		targetAddr, resolveErr := net.ResolveUDPAddr("udp", targetAddress)
 		if resolveErr != nil {
 			e.stats.IncErrorPlugin(pluginName)
 			http.Error(w, "target resolve failed", http.StatusBadGateway)
@@ -173,8 +188,8 @@ func (e *Engine) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	}
 
 	serverConn, err := net.DialTimeout(
-		selectedPlugin.TargetNetwork(),
-		selectedPlugin.TargetAddress(),
+		targetNetwork,
+		targetAddress,
 		e.cfg.DialTimeoutDuration(),
 	)
 	if err != nil {

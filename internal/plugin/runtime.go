@@ -3,6 +3,7 @@ package plugin
 import (
 	"encoding/base64"
 	"fmt"
+	"strings"
 )
 
 type RuntimePlugin struct {
@@ -18,6 +19,7 @@ type Info struct {
 	SupportedProtocols []string     `json:"supported_protocols"`
 	TargetNetwork      string       `json:"target_network"`
 	TargetAddress      string       `json:"target_address"`
+	Targets            []Target     `json:"targets,omitempty"`
 	Capabilities       Capabilities `json:"capabilities"`
 	RuntimeType        string       `json:"runtime_type"`
 	RuntimeMode        string       `json:"runtime_mode"`
@@ -46,6 +48,7 @@ func (p *RuntimePlugin) Info() Info {
 		SupportedProtocols: append([]string(nil), p.schema.Protocols.Supported...),
 		TargetNetwork:      p.schema.Target.Network,
 		TargetAddress:      p.schema.Target.Address,
+		Targets:            p.Targets(),
 		Capabilities:       p.schema.Capabilities,
 		RuntimeType:        p.schema.Runtime.Type,
 		RuntimeMode:        p.schema.Runtime.Mode,
@@ -61,6 +64,29 @@ func (p *RuntimePlugin) TargetNetwork() string {
 
 func (p *RuntimePlugin) TargetAddress() string {
 	return p.schema.Target.Address
+}
+
+func (p *RuntimePlugin) Targets() []Target {
+	if len(p.schema.Targets) == 0 {
+		return nil
+	}
+	return append([]Target(nil), p.schema.Targets...)
+}
+
+func (p *RuntimePlugin) ResolveTarget(targetID string) (Target, bool) {
+	targetID = strings.TrimSpace(targetID)
+	if targetID == "" {
+		return p.schema.Target, true
+	}
+	for _, target := range p.schema.Targets {
+		if strings.EqualFold(target.ID, targetID) {
+			return target, true
+		}
+	}
+	if strings.EqualFold(targetID, "default") || strings.EqualFold(targetID, "target") {
+		return p.schema.Target, true
+	}
+	return Target{}, false
 }
 
 func (p *RuntimePlugin) Passthrough() bool {

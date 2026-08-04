@@ -35,8 +35,14 @@ func startClientFlow(reader *bufio.Reader) error {
 		return err
 	}
 	requireProfile := shouldRequireClientProfile(cfg, endpointChanged)
-	if err := applyClientProfileFromServerWithAuthRetry(reader, cfg, requireProfile); err != nil {
+	profile, profileApplied, err := applyClientProfileFromServerWithAuthRetry(reader, cfg, requireProfile)
+	if err != nil {
 		return err
+	}
+	if profileApplied {
+		if err := applyLocalClientTemplateForProfile(layout, profile, cfg); err != nil {
+			return err
+		}
 	}
 
 	configPath, err = generatedConfigPath(layout, "client.menu.json")
@@ -162,41 +168,41 @@ func promptClientAuthToken(reader *bufio.Reader, cfg *config.ClientConfig) error
 	return nil
 }
 
-func applyClientProfileFromServerWithAuthRetry(reader *bufio.Reader, cfg *config.ClientConfig, requireProfile bool) error {
-	err := applyClientProfileFromServer(cfg, requireProfile)
+func applyClientProfileFromServerWithAuthRetry(reader *bufio.Reader, cfg *config.ClientConfig, requireProfile bool) (serverPluginProfile, bool, error) {
+	profile, applied, err := applyClientProfileFromServer(cfg, requireProfile)
 	if err == nil {
-		return nil
+		return profile, applied, nil
 	}
 	if !isAuthHTTPStatus(err) {
-		return err
+		return serverPluginProfile{}, false, err
 	}
 
 	fmt.Print(msg("client.auth_required"))
 	if promptErr := promptClientAuthToken(reader, cfg); promptErr != nil {
-		return promptErr
+		return serverPluginProfile{}, false, promptErr
 	}
 
-	err = applyClientProfileFromServer(cfg, requireProfile)
+	profile, applied, err = applyClientProfileFromServer(cfg, requireProfile)
 	if err == nil {
-		return nil
+		return profile, applied, nil
 	}
 	if isAuthHTTPStatus(err) {
-		return fmt.Errorf(msg("client.preflight_auth_failed"), err)
+		return serverPluginProfile{}, false, fmt.Errorf(msg("client.preflight_auth_failed"), err)
 	}
-	return err
+	return serverPluginProfile{}, false, err
 }
 
-func applyClientProfileFromServer(cfg *config.ClientConfig, requireProfile bool) error {
+func applyClientProfileFromServer(cfg *config.ClientConfig, requireProfile bool) (serverPluginProfile, bool, error) {
 	profile, err := getServerDefaultPluginProfile(cfg)
 	if err != nil {
 		if requireProfile && isAuthHTTPStatus(err) {
-			return err
+			return serverPluginProfile{}, false, err
 		}
 		if requireProfile {
-			return fmt.Errorf(msg("client.profile_fetch_error"), cfg.ServerWSURL, err)
+			return serverPluginProfile{}, false, fmt.Errorf(msg("client.profile_fetch_error"), cfg.ServerWSURL, err)
 		}
 		fmt.Printf(msg("client.profile_fetch_warning"), err)
-		return nil
+		return serverPluginProfile{}, false, nil
 	}
 
 	if strings.TrimSpace(profile.Name) != "" {
@@ -208,16 +214,99 @@ func applyClientProfileFromServer(cfg *config.ClientConfig, requireProfile bool)
 	if netw == "tcp" || netw == "udp" {
 		cfg.ListenNetwork = netw
 	}
+	return profile, true, nil
+}
+
+func applyLocalClientTemplateForProfile(layout app.RuntimeLayout, profile serverPluginProfile, cfg *config.ClientConfig) error {
+	pluginName := strings.TrimSpace(profile.Name)
+	if pluginName == "" {
+		return nil
+	}
+
+	plugins, err := loadMenuPlugins(layout.PluginDir)
+	if err != nil {
+		return nil
+	}
+
+	templateRel := ""
+	for _, item := range plugins {
+		if item.Name == pluginName {
+			templateRel = strings.TrimSpace(item.ClientTemplate)
+			break
+		}
+	}
+	if templateRel == "" {
+		return nil
+	}
+
+	templatePath := resolveRuntimePath(layout, templateRel)
+	loaded, err := config.LoadClientWithOptions(templatePath, config.ClientNormalizeOptions{
+		ValidateServerWSURL:    false,
+		AllowMissingEnvSecrets: true,
+	})
+	if err != nil {
+		return fmt.Errorf(msg("config.template_load_failed"), templatePath, err)
+	}
+
+	serverWSURL := cfg.ServerWSURL
+	authToken := cfg.AuthToken
+	authHeader := cfg.AuthHeader
+	headers := cloneStringMap(cfg.Headers)
+
+	*cfg = *loaded
+	cfg.ServerWSURL = serverWSURL
+	cfg.PluginName = pluginName
+	cfg.AuthToken = authToken
+	cfg.AuthHeader = authHeader
+	if len(headers) > 0 {
+		cfg.Headers = headers
+	}
+	if profile.TargetNetwork == "tcp" || profile.TargetNetwork == "udp" {
+		cfg.ListenNetwork = profile.TargetNetwork
+	}
 	return nil
 }
 
-func printClientReadyInstructions(cfg *config.ClientConfig) {
-	target, host, port := splitDisplayTarget(cfg.ListenAddr)
+func cloneStringMap(in map[string]string) map[string]string {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make(map[string]string, len(in))
+	for key, value := range in {
+		out[key] = value
+	}
+	return out
+}
 
+func printClientReadyInstructions(cfg *config.ClientConfig) {
 	fmt.Println(msg("client.ready"))
-	fmt.Printf(msg("client.game_target_line"), target)
-	if host != "" && port != "" {
-		fmt.Printf(msg("client.game_host_port_line"), host, port)
+	if len(cfg.UDPListeners) > 0 {
+		fmt.Println(msg("client.udp_listeners"))
+		usesAnyHost := false
+		for _, listener := range cfg.UDPListeners {
+			target, host, port := splitDisplayTarget(listener.ListenAddr)
+			label := strings.TrimSpace(listener.Target)
+			if label == "" {
+				label = "default"
+			}
+			if isAnyListenHost(listener.ListenAddr) {
+				usesAnyHost = true
+			}
+			if host != "" && port != "" {
+				fmt.Printf(msg("client.udp_listener_host_port_line"), label, target, host, port)
+			} else {
+				fmt.Printf(msg("client.udp_listener_line"), label, target)
+			}
+		}
+		if usesAnyHost {
+			fmt.Print(msg("client.anyhost_hint"))
+		}
+	} else {
+		target, host, port := splitDisplayTarget(cfg.ListenAddr)
+		fmt.Printf(msg("client.game_target_line"), target)
+		if host != "" && port != "" {
+			fmt.Printf(msg("client.game_host_port_line"), host, port)
+		}
 	}
 	fmt.Printf(msg("client.remote_line"), cfg.ServerWSURL)
 	if strings.TrimSpace(cfg.PluginName) != "" {
@@ -244,4 +333,13 @@ func splitDisplayTarget(addr string) (target string, host string, port string) {
 		host = "127.0.0.1"
 	}
 	return net.JoinHostPort(host, port), host, port
+}
+
+func isAnyListenHost(addr string) bool {
+	host, _, err := net.SplitHostPort(strings.TrimSpace(addr))
+	if err != nil {
+		return false
+	}
+	host = strings.Trim(host, "[]")
+	return host == "" || host == "0.0.0.0" || host == "::"
 }

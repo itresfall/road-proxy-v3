@@ -80,7 +80,7 @@ remove_release_internal_files() {
   fi
 }
 
-VERSION="${ROAD_VERSION:-0.1.0-dev}"
+VERSION="${ROAD_VERSION:-0.2.0-dev}"
 COMMIT="${ROAD_COMMIT:-$(git -C "${REPO_ROOT}" rev-parse --short HEAD 2>/dev/null || true)}"
 COMMIT="${COMMIT:-unknown}"
 BUILD_DATE="${ROAD_BUILD_DATE:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}"

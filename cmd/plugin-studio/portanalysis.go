@@ -10,6 +10,9 @@ func recommendNetworkAndPort(summary *captureSummary) (string, int) {
 	if summary == nil {
 		return "tcp", 0
 	}
+	if network, port, ok := advancedCaptureRecommendation(summary); ok {
+		return network, port
+	}
 
 	tcpPort, tcpHits := topCandidatePort(summary.LocalPortHits["tcp"], false)
 	udpPort, udpHits := topCandidatePort(summary.LocalPortHits["udp"], false)
@@ -55,6 +58,49 @@ func recommendNetworkAndPort(summary *captureSummary) (string, int) {
 		port = topPort(summary.RemotePortHits[network])
 	}
 	return network, port
+}
+
+func advancedCaptureRecommendation(summary *captureSummary) (string, int, bool) {
+	if summary == nil || summary.PacketFingerprint == nil || !summary.PacketFingerprint.PacketSizeObserved {
+		return "", 0, false
+	}
+	ports := summary.PacketFingerprint.CapturedPorts
+	if len(ports) == 0 {
+		return "", 0, false
+	}
+	for _, scope := range []string{"local", "remote"} {
+		if network, port := bestCapturedPort(ports, scope, false); port > 0 {
+			return network, port, true
+		}
+	}
+	for _, scope := range []string{"local", "remote"} {
+		if network, port := bestCapturedPort(ports, scope, true); port > 0 {
+			return network, port, true
+		}
+	}
+	return "", 0, false
+}
+
+func bestCapturedPort(ports []capturedPortStat, scope string, allowEphemeral bool) (string, int) {
+	bestNetwork := ""
+	bestPort := 0
+	bestPackets := 0
+	for _, candidate := range ports {
+		if candidate.Scope != scope || candidate.Port <= 0 || candidate.Packets <= 0 {
+			continue
+		}
+		if isLikelyNoisePort(candidate.Port) || (!allowEphemeral && isEphemeralPort(candidate.Port)) {
+			continue
+		}
+		if candidate.Packets > bestPackets ||
+			(candidate.Packets == bestPackets && candidate.Network == "udp" && bestNetwork != "udp") ||
+			(candidate.Packets == bestPackets && candidate.Network == bestNetwork && (bestPort == 0 || candidate.Port < bestPort)) {
+			bestNetwork = candidate.Network
+			bestPort = candidate.Port
+			bestPackets = candidate.Packets
+		}
+	}
+	return bestNetwork, bestPort
 }
 
 func topCandidatePort(src map[int]int, allowEphemeral bool) (int, int) {
