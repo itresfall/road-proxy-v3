@@ -118,7 +118,11 @@ try {
 
   if ($Package -and (Test-Path -LiteralPath $OutputRoot)) {
     Get-ChildItem -LiteralPath $OutputRoot -File |
-      Where-Object { $_.Name -like "road-proxy-v3_*.zip" -or $_.Name -like "road-proxy-v3_*.zip.sha256" } |
+      Where-Object {
+        $_.Name -like "road-proxy-v3_*.zip" -or
+        $_.Name -like "road-proxy-v3_*.zip.sha256" -or
+        $_.Name -like "RELEASE_NOTES_*.md"
+      } |
       Remove-Item -Force
   }
 
